@@ -17,11 +17,14 @@ rm -rf profile/airootfs
 mkdir -p profile/airootfs/etc
 mv /tmp/ravnux-mkinitcpio-$$ profile/airootfs/etc/mkinitcpio.conf.d
 cp -a overlay/common/. profile/airootfs/
+cp overlay/common/etc/pacman.conf profile/pacman.conf
 cp -a overlay/live/. profile/airootfs/
 # filesystem owns /etc/os-release: apply live branding at startup instead.
 rm -f profile/airootfs/etc/os-release
 mkdir -p profile/airootfs/usr/share/ravnux/root-overlay
 cp -a overlay/common/. profile/airootfs/usr/share/ravnux/root-overlay/
+install -Dm644 docs/GUIDE_PL.md profile/airootfs/usr/share/ravnux/guide-pl.md
+install -Dm644 docs/GUIDE_PL.md profile/airootfs/usr/share/ravnux/root-overlay/usr/share/ravnux/guide-pl.md
 install -Dm644 packages/system.txt profile/airootfs/usr/share/ravnux/system-packages.txt
 install -Dm755 scripts/install.sh profile/airootfs/usr/local/bin/ravnux-install
 cat packages/system.txt packages/live.txt | sort -u > profile/packages.x86_64
@@ -33,6 +36,10 @@ iso_publisher="RAVNUX <https://github.com/stainleSSStar/RAVNUX>"
 iso_application="RAVNUX XFCE Live and Installer"
 airootfs_image_tool_options=('-comp' 'zstd' '-Xcompression-level' '15' '-b' '1M')
 file_permissions=(
+ ["/usr/local/bin/ravnux-keyring-init"]="0:0:755"
+ ["/usr/local/bin/ravnux-guide"]="0:0:755"
+ ["/usr/share/ravnux/root-overlay/usr/local/bin/ravnux-keyring-init"]="0:0:755"
+ ["/usr/share/ravnux/root-overlay/usr/local/bin/ravnux-guide"]="0:0:755"
  ["/usr/local/bin/ravnux-desktop"]="0:0:755"
  ["/usr/share/ravnux/root-overlay/usr/local/bin/ravnux-desktop"]="0:0:755"
  ["/usr/share/ravnux/root-overlay/etc/sudoers.d/20-ravnux-wheel"]="0:0:440"
@@ -62,10 +69,20 @@ python3 scripts/check.py
 if $prepare_only; then exit 0; fi
 # Fail early on renamed/missing packages instead of silently producing an incomplete image.
 mapfile -t packages < profile/packages.x86_64
-pacman -Si "${packages[@]}" >/dev/null
+pacman-key --init
+pacman-key --populate archlinux
+bash overlay/common/usr/local/bin/ravnux-keyring-init "$PWD/overlay/common/usr/share/ravnux/keyring/xlibre-archlinux.asc"
+pacman --config "$PWD/profile/pacman.conf" -Sy --noconfirm
+pacman --config "$PWD/profile/pacman.conf" -Si "${packages[@]}" >/dev/null
 mkdir -p out
 pacman -Q > out/build-host-packages.txt
 mkarchiso -v -w "$PWD/work" -o "$PWD/out" "$PWD/profile"
 cp work/x86_64/airootfs/usr/share/ravnux/system-packages.txt out/requested-system-packages.txt
 cp work/iso/arch/pkglist.x86_64.txt out/live-packages.txt
+if grep -Eq '^xorg-server(-| )|^xf86-input-libinput ' out/live-packages.txt; then
+ echo 'Unexpected Xorg server/input package in ISO.' >&2
+ exit 1
+fi
+grep -q '^xlibre-xserver ' out/live-packages.txt
+grep -q '^xlibre-input-libinput ' out/live-packages.txt
 (cd out && sha256sum ./*.iso > SHA256SUMS)

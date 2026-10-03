@@ -62,7 +62,7 @@ mapfile -t packages < "$packages_file"
 packages+=(grub efibootmgr)
 [[ $root_type != btrfs ]] || packages+=(btrfs-progs)
 systemctl start pacman-init.service
-pacstrap -K "$target" "${packages[@]}"
+pacstrap -C /etc/pacman.conf -K "$target" "${packages[@]}"
 cp -a --remove-destination "$overlay/." "$target/"
 chmod 0440 "$target/etc/sudoers.d/20-ravnux-wheel"
 genfstab -U "$target" > "$target/etc/fstab"
@@ -77,6 +77,14 @@ locale-gen
 printf 'LANG=en_US.UTF-8\n' > /etc/locale.conf
 useradd -m -G wheel -s /usr/bin/fish "$2"
 passwd -l root
+pacman-key --init
+pacman-key --populate archlinux
+ravnux-keyring-init
+pacman -Q xlibre-xserver xlibre-input-libinput
+if pacman -Q xorg-server &>/dev/null; then
+ echo "Unexpected Xorg server in target." >&2
+ exit 1
+fi
 visudo -cf /etc/sudoers
 systemctl enable NetworkManager.service bluetooth.service lightdm.service systemd-timesyncd.service
 systemctl set-default graphical.target

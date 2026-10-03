@@ -11,3 +11,7 @@ e2fsprogs
 btrfs-progs
 grub
 efibootmgr
+pciutils
+usbutils
+xorg-xdpyinfo
+xorg-xrandr

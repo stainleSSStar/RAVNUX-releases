@@ -9,8 +9,8 @@ alsa-utils
 mesa
 vulkan-intel
 vulkan-radeon
-xorg-server
-xf86-input-libinput
+xlibre-xserver
+xlibre-input-libinput
 xfce4-session
 xfce4-appfinder
 xfce4-screensaver

@@ -1,11 +1,13 @@
 # RAVNUX
 
-Minimalistyczny system **x86_64 oparty na Arch Linux**, z XFCE, Fish i własnym purpurowo-różowym motywem. Repozytorium zawiera konfigurację obrazu live, instalator systemu i proces budowania ISO. Projekt jest wstępny: pomyślna kompilacja nie oznacza przetestowania sprzętu ani instalacji.
+Minimalistyczny system **x86_64 oparty na Arch Linux**, z XFCE na XLibre, Fish i własnym purpurowo-różowym motywem. Repozytorium zawiera konfigurację obrazu live, instalator systemu i proces budowania ISO. Projekt jest wstępny: pomyślna kompilacja nie oznacza przetestowania sprzętu ani instalacji.
+
+**Instrukcja krok po kroku po uruchomieniu ISO: [GUIDE_PL.md](docs/GUIDE_PL.md)**. Jest też dostępna offline przez `ravnux-guide` oraz menu aplikacji.
 
 ## Co zawiera system
 
 - Linux, oficjalne firmware Arch, mikrokod Intel/AMD, firmware SOF dla układów audio.
-- XFCE na X11: jeden panel, menedżer plików, ustawienia, terminal, powiadomienia i zarządzanie energią. Kompozytor domyślnie wyłączony.
+- XFCE na X11 z serwerem XLibre (gałąź stable): jeden panel, menedżer plików, ustawienia, terminal, powiadomienia i zarządzanie energią. Kompozytor domyślnie wyłączony.
 - Fish jako powłoka użytkownika; Bash pozostaje zależnością systemu i służy do wykonywania skryptów.
 - PipeWire + WirePlumber, obsługa ALSA i aplikacji PulseAudio, kontrola głośności i mikrofonu.
 - NetworkManager, Wi-Fi, Bluetooth, montowanie nośników USB oraz uwierzytelnianie administracyjne.
@@ -14,7 +16,7 @@ Minimalistyczny system **x86_64 oparty na Arch Linux**, z XFCE, Fish i własnym 
 
 Bez preinstalowanej przeglądarki, pakietu biurowego, gier, sklepu z aplikacjami, helpera AUR, serwera SSH i środowiska programistycznego. Pakiety `packages/system.txt` stanowią zestaw docelowy; pacman instaluje także ich wymagane zależności. GRUB/efibootmgr oraz ewentualnie btrfs-progs są dodawane przez instalator jako narzędzia rozruchu/filesystemu.
 
-To Arch rolling release korzystający wyłącznie z repozytoriów **core/extra**, bez testing. Brak mechanizmu automatycznego aktualizowania systemu. Budowanie w różnych dniach może pobrać różne wersje pakietów; nie jest to zamrożony ani bitowo powtarzalny obraz.
+To Arch rolling release korzystający z repozytoriów **core/extra** i dodatkowego **xlibre-stable**, bez testing i beta. Brak mechanizmu automatycznego aktualizowania systemu. Budowanie w różnych dniach może pobrać różne wersje pakietów; nie jest to zamrożony ani bitowo powtarzalny obraz.
 
 ## Pobranie ISO z GitHub
 
@@ -78,8 +80,10 @@ Dla BIOS zamontuj root, ewentualnie osobne `/boot`, i dodaj `--bios-disk /dev/sd
 
 ```sh
 python3 scripts/check.py
-python3 -m unittest discover -s tests -v
+sudo python3 -m unittest discover -s tests -v
 ```
+
+Serwer `xorg-server` i sterownik `xf86-input-libinput` zostały zastąpione przez `xlibre-xserver` i `xlibre-input-libinput`. Klucz podpisujący XLibre jest dołączony i sprawdzany według pełnego fingerprintu `0C92313001CFCA27627B9098B97F7C613F359424`. Podpisy pakietów pozostają wymagane. Klienci i biblioteki X11 mogą zachować nazwy `xorg-*`/`libX*`; nie są serwerem Xorg.
 
 Kontrole źródeł weryfikują składnię Bash, XML, format konfiguracji, zestaw pakietów i oddzielenie sesji live od systemu docelowego. Proces budowania dodatkowo sprawdza dostępność wszystkich żądanych pakietów w bazie pacmana i buduje ISO. Nie zastępuje to testu bootowania ani instalacji.
 
@@ -101,6 +105,7 @@ Firmware i sterowniki otwarte pokrywają wiele urządzeń, ale nie wszystkie. Ko
 - `packages/live.txt` — dodatkowe narzędzia obecne tylko na ISO.
 - `overlay/common/` — motyw i ustawienia obu środowisk.
 - `overlay/live/` — konto live, autologowanie i inicjalizacja kluczy pacmana.
+- `docs/GUIDE_PL.md` — gotowe polecenia i oczekiwane wyniki testów/instalacji.
 - `scripts/build.sh` — składanie profilu i kompilacja ISO przez Archiso.
 - `scripts/install.sh` — instalacja na zamontowany root.
 - `.github/workflows/iso.yml` — automatyczne budowanie ISO.
