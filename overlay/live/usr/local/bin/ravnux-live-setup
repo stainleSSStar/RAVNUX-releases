@@ -1,0 +1,10 @@
+#!/usr/bin/env bash
+set -euo pipefail
+groupadd -f -r autologin
+if ! id ravnux &>/dev/null; then
+ useradd -m -G wheel,autologin -s /usr/bin/fish ravnux
+ passwd -d ravnux
+fi
+passwd -l root
+cp --remove-destination /usr/share/ravnux/root-overlay/etc/os-release /etc/os-release
+sed -E -i 's/#(Server = https:)/\1/g' /etc/pacman.d/mirrorlist

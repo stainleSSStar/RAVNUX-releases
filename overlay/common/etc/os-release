@@ -1,0 +1,8 @@
+NAME="RAVNUX"
+PRETTY_NAME="RAVNUX"
+ID=ravnux
+ID_LIKE=arch
+BUILD_ID=rolling
+ANSI_COLOR="0;35"
+HOME_URL="https://github.com/stainleSSStar/RAVNUX"
+DOCUMENTATION_URL="https://github.com/stainleSSStar/RAVNUX#readme"

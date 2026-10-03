@@ -1,0 +1,6 @@
+[Desktop Entry]
+Type=Application
+Name=RAVNUX desktop color
+Exec=/usr/local/bin/ravnux-desktop
+OnlyShowIn=XFCE;
+NoDisplay=true

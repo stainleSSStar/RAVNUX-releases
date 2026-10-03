@@ -1,0 +1,36 @@
+name: Build RAVNUX ISO
+on:
+  push:
+    branches: [main]
+    paths-ignore: ['**.md']
+  pull_request:
+  workflow_dispatch:
+permissions:
+  contents: read
+concurrency:
+  group: ravnux-${{ github.ref }}
+  cancel-in-progress: true
+jobs:
+  iso:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 60
+    steps:
+      - uses: actions/checkout@v4
+      - name: Validate source
+        run: |
+          python3 scripts/check.py
+          python3 -m unittest discover -s tests -v
+      - name: Build in official Arch Linux container
+        run: |
+          docker run --rm --privileged \
+            -e SOURCE_DATE_EPOCH="$(git log -1 --format=%ct)" \
+            -v "$PWD:/build" -w /build archlinux:base-devel \
+            bash -euc 'pacman -Syu --noconfirm archiso python; bash scripts/build.sh'
+      - name: Upload ISO, checksums and package manifests
+        uses: actions/upload-artifact@v4
+        with:
+          name: RAVNUX-x86_64-${{ github.run_number }}
+          path: out/
+          if-no-files-found: error
+          compression-level: 0
+          retention-days: 14

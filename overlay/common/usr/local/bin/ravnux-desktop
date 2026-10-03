@@ -1,0 +1,14 @@
+#!/usr/bin/env bash
+# Apply to the actual monitor IDs instead of assuming monitor0/HDMI-1.
+for attempt in {1..20}; do
+ mapfile -t properties < <(xfconf-query -c xfce4-desktop -l 2>/dev/null | sed -n 's@/last-image$@@p')
+ if ((${#properties[@]})); then
+  for property in "${properties[@]}"; do
+   xfconf-query -c xfce4-desktop -p "$property/image-style" -s 0
+   xfconf-query -c xfce4-desktop -p "$property/color-style" -s 0
+   xfconf-query -c xfce4-desktop -p "$property/rgba1" -s 0.094 -s 0.055 -s 0.141 -s 1.0
+  done
+  exit 0
+ fi
+ sleep 0.5
+done

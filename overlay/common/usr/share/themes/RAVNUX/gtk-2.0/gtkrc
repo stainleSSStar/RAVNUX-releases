@@ -1,0 +1,11 @@
+style "ravnux-colors" {
+ bg[NORMAL] = "#24152f"
+ fg[NORMAL] = "#eadcf2"
+ base[NORMAL] = "#180e24"
+ text[NORMAL] = "#eadcf2"
+ bg[SELECTED] = "#9d3ac2"
+ fg[SELECTED] = "#fff3fc"
+ base[SELECTED] = "#9d3ac2"
+ text[SELECTED] = "#fff3fc"
+}
+class "*" style "ravnux-colors"
