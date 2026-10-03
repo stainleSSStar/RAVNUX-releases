@@ -1,6 +1,6 @@
 #!/usr/bin/env bash
 # Apply to the actual monitor IDs instead of assuming monitor0/HDMI-1.
-for attempt in {1..20}; do
+for _ in {1..20}; do
  mapfile -t properties < <(xfconf-query -c xfce4-desktop -l 2>/dev/null | sed -n 's@/last-image$@@p')
  if ((${#properties[@]})); then
   for property in "${properties[@]}"; do

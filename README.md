@@ -33,7 +33,7 @@ cd RAVNUX
 sudo bash scripts/build.sh
 ```
 
-Wynik: `out/ravnux-*.iso`. Przed kolejnym pełnym budowaniem przenieś lub usuń wygenerowane `work/` i `profile/`. Skrypt nie usuwa ich automatycznie. Potrzebny jest internet, kilkanaście GB wolnego miejsca i możliwość używania mount/loop. Mac nie jest natywnym hostem tego procesu; workflow używa oficjalnego kontenera Arch na Linuxie.
+Wynik: `out/ravnux-*.iso`. `sudo bash scripts/build.sh --prepare-only` składa i sprawdza sam profil bez pobierania pakietów ani tworzenia ISO. Przed kolejnym pełnym budowaniem przenieś lub usuń wygenerowane `work/` i `profile/`. Skrypt nie usuwa ich automatycznie. Potrzebny jest internet, kilkanaście GB wolnego miejsca i możliwość używania mount/loop. Mac nie jest natywnym hostem tego procesu; workflow używa oficjalnego kontenera Arch na Linuxie.
 
 Skrypt kopiuje szablony rozruchowe z zainstalowanego `archiso`, zachowuje jego initramfs, ale usuwa zestaw ratunkowy upstreamu. Następnie dodaje wyłącznie pakiety RAVNUX, konfigurację wspólną i dodatki live. `out/live-packages.txt` podaje faktyczne wersje pakietów obrazu, a `build-host-packages.txt` wersje narzędzi kompilacji.
 

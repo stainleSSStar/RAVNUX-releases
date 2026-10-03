@@ -2,11 +2,16 @@
 set -euo pipefail
 cd "$(dirname "$(readlink -f "$0")")/.."
 [[ $EUID == 0 ]] || { echo 'Run with sudo on Arch Linux.' >&2; exit 1; }
-command -v mkarchiso >/dev/null
+prepare_only=false
+if (($#)); then
+ [[ $# == 1 && $1 == --prepare-only ]] || { echo 'Usage: build.sh [--prepare-only]' >&2; exit 1; }
+ prepare_only=true
+fi
+if ! $prepare_only; then command -v mkarchiso >/dev/null; fi
 [[ $(uname -m) == x86_64 ]] || { echo 'x86_64 build host required.' >&2; exit 1; }
 [[ ! -e work && ! -e profile ]] || { echo 'Move/remove previous work/ and profile/ before a fresh build.' >&2; exit 1; }
 # Retain upstream boot templates and initramfs configuration, not its rescue software/services.
-cp -a /usr/share/archiso/configs/releng profile
+cp -a "${RAVNUX_RELENG_DIR:-/usr/share/archiso/configs/releng}" profile
 cp -a profile/airootfs/etc/mkinitcpio.conf.d /tmp/ravnux-mkinitcpio-$$
 rm -rf profile/airootfs
 mkdir -p profile/airootfs/etc
@@ -37,6 +42,9 @@ file_permissions=(
  ["/etc/sudoers.d/20-ravnux-wheel"]="0:0:440"
 )
 EOF
+# Remove upstream speech boot options: this minimal image does not include speech software.
+find profile/efiboot -type f -name '*speech*' -delete
+sed -i '/# Accessibility boot option/,$d' profile/syslinux/archiso_sys-linux.cfg
 # Keep Arch's supported paths (install_dir=arch); brand boot menu titles only.
 find profile/syslinux profile/efiboot -type f \( -name '*.cfg' -o -name '*.conf' \) -exec sed -i 's/Arch Linux/RAVNUX/g' {} +
 # Explicitly enable only the services RAVNUX uses.
@@ -51,6 +59,7 @@ ln -s /usr/lib/systemd/system/graphical.target "$units/default.target"
 ln -s /etc/systemd/system/ravnux-live-setup.service "$units/multi-user.target.wants/ravnux-live-setup.service"
 : > profile/airootfs/etc/machine-id
 python3 scripts/check.py
+if $prepare_only; then exit 0; fi
 # Fail early on renamed/missing packages instead of silently producing an incomplete image.
 mapfile -t packages < profile/packages.x86_64
 pacman -Si "${packages[@]}" >/dev/null

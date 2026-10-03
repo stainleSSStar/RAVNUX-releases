@@ -10,9 +10,10 @@ mesa
 vulkan-intel
 vulkan-radeon
 xorg-server
-xorg-xinit
 xf86-input-libinput
 xfce4-session
+xfce4-appfinder
+xfce4-screensaver
 xfce4-panel
 xfce4-settings
 xfdesktop
