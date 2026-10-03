@@ -10,7 +10,7 @@ Minimalistyczny system **x86_64 oparty na Arch Linux**, z XFCE, Fish i własnym 
 - PipeWire + WirePlumber, obsługa ALSA i aplikacji PulseAudio, kontrola głośności i mikrofonu.
 - NetworkManager, Wi-Fi, Bluetooth, montowanie nośników USB oraz uwierzytelnianie administracyjne.
 - Mesa: otwarte sterowniki grafiki Intel/AMD oraz Nouveau dla obsługiwanych kart NVIDIA. Bez własnościowego sterownika NVIDIA i pakietów AUR.
-- LightDM, własny motyw GTK/Xfwm, ciemne purpurowe tło i różowo-purpurowy terminal/Fish. Bez zewnętrznych tapet ani pobieranych motywów.
+- LightDM, własny motyw GTK/Xfwm, ciemne purpurowe tło i różowo-purpurowy terminal/Fish. Domyślna tapeta to cyberpunkowe miasto z purpurowymi neonami; logo to różowa litera R na purpurowym tle. Oba pliki są dostarczane na ISO oraz w systemie docelowym, bez pobierania przy logowaniu.
 
 Bez preinstalowanej przeglądarki, pakietu biurowego, gier, sklepu z aplikacjami, helpera AUR, serwera SSH i środowiska programistycznego. Pakiety `packages/system.txt` stanowią zestaw docelowy; pacman instaluje także ich wymagane zależności. GRUB/efibootmgr oraz ewentualnie btrfs-progs są dodawane przez instalator jako narzędzia rozruchu/filesystemu.
 
@@ -44,6 +44,15 @@ Po starcie automatycznie loguje się użytkownik `ravnux` z Fish i XFCE. Wyłąc
 ## Instalacja na dysk
 
 Instalator wymaga internetu i **wcześniej przygotowanych, pustych partycji**. Sam nie partycjonuje i nie formatuje dysku. Obsługuje zwykły root ext4 albo btrfs, bez LUKS/LVM, RAID i automatycznego dual boot. Użyj osobnej, dedykowanej partycji EFI: instalator zapisuje standardowy loader UEFI `EFI/BOOT/BOOTX64.EFI`, bez modyfikowania NVRAM.
+
+Zalecany prosty układ GPT/UEFI:
+
+| Partycja | Rozmiar | Typ/system plików | Montowanie w instalatorze |
+| --- | --- | --- | --- |
+| EFI | 1 GiB | EFI System Partition / FAT32 | `/mnt/boot/efi` |
+| Root | Reszta dysku; proponowane co najmniej 30 GiB | Linux filesystem / ext4 | `/mnt` |
+
+Osobna partycja `/home` i swap nie są wymagane. Obecny instalator oczekuje pustego root, więc najprościej pozostawić `/home` jako katalog na root. Można później skonfigurować plik swap; hibernacja wymaga dodatkowej konfiguracji. Zamiast ext4 obsługiwany jest też btrfs. Przy BIOS/GPT potrzebna jest dodatkowa partycja BIOS boot o wielkości 1–2 MiB, bez systemu plików i bez montowania, zamiast EFI.
 
 Przykład po przygotowaniu partycji (nazwy urządzeń dopasuj do sprzętu):
 
@@ -97,3 +106,10 @@ Firmware i sterowniki otwarte pokrywają wiele urządzeń, ale nie wszystkie. Ko
 - `.github/workflows/iso.yml` — automatyczne budowanie ISO.
 
 Kod i oryginalne grafiki motywu: MIT. Pakiety Arch i szablony Archiso zachowują własne licencje. Projekt nie jest oficjalnym wydaniem Arch Linux.
+
+## Grafiki RAVNUX
+
+- `overlay/common/usr/share/pixmaps/ravnux-logo.png` — różowa litera R na purpurowym tle; ikona menu aplikacji i domyślna ikona użytkownika na ekranie logowania.
+- `overlay/common/usr/share/backgrounds/ravnux/cyberpunk-city.jpg` — domyślna tapeta pulpitu i ekranu logowania, generowana panorama miasta.
+
+Tapeta jest ustawiana przy pierwszym uruchomieniu pulpitu użytkownika. Późniejszy wybór własnej tapety pozostaje zachowany. Grafiki zostały wygenerowane przy użyciu wbudowanego generatora obrazów. Prompty: `docs/artwork-prompts.md`.

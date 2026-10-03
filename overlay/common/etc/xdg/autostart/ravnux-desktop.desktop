@@ -1,6 +1,6 @@
 [Desktop Entry]
 Type=Application
-Name=RAVNUX desktop color
+Name=RAVNUX default wallpaper
 Exec=/usr/local/bin/ravnux-desktop
 OnlyShowIn=XFCE;
 NoDisplay=true
