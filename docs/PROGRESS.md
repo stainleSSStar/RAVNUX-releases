@@ -27,7 +27,7 @@ Pełne zbudowanie i rozruch finalnego ISO nie są jeszcze potwierdzone.
 | 0 | Uporządkowanie pracy | Plan zapisany w repozytorium | Gotowe |
 | 1 | Klucze XLibre | Przegląd poprawki, testy keyring, zapis zmian | Gotowe |
 | 2 | Ochrona partycji EFI | Przegląd instalatora, test odrzucenia zajętej EFI, zapis | Gotowe |
-| 3 | Ozdobne logo R ze złotymi wzorami | Porównanie odzyskanej grafiki z GitHubem, kontrola integracji, zapis | Następny |
+| 3 | Ozdobne logo R ze złotymi wzorami | Porównanie odzyskanej grafiki z GitHubem, kontrola integracji, zapis | Gotowe |
 | 4 | Budowanie i CI | Przegląd nbd, testu VM, konsoli szeregowej i workflow, zapis | Oczekuje |
 | 5 | Budowa ISO | Udany build konkretnego commita, zapis przebiegu i artefaktu | Oczekuje |
 | 6a | Rozruch BIOS | Test VM i zapis wyniku | Oczekuje |
@@ -35,13 +35,11 @@ Pełne zbudowanie i rozruch finalnego ISO nie są jeszcze potwierdzone.
 | 6c | Instalacja | Instalacja na pustym dysku VM i start z dysku | Oczekuje |
 | 7 | Instrukcja i wydanie | Przewodnik zgodny z przetestowanym ISO, suma kontrolna i publikacja | Oczekuje |
 
-## Następny krok: etap 3
+## Następny krok: etap 4
 
-Porównać odzyskane logo R ze złotymi wzorami z plikiem na GitHubie:
-`overlay/common/usr/share/pixmaps/ravnux-logo.png`.
-Sprawdzić wygląd i integrację z pulpitem oraz instalacją; zapisać właściwą grafikę
-i wynik kontroli. Nie zastępować gotowej grafiki bez potrzeby.
-Bazować na bieżącym main, zachowując ukończone poprawki kluczy i ochrony EFI.
+Przegląd budowania i CI zgodnie z tabelą etapów. Etap 3 zakończony:
+gotowe logo ze złotymi ornamentami jest na main i używa istniejących ścieżek
+LightDM oraz ikony przewodnika. Nie trzeba ponownie kodować ani wysyłać grafiki.
 
 ## Pozostałe odzyskane zmiany do późniejszego sprawdzenia
 
@@ -49,7 +47,7 @@ Bazować na bieżącym main, zachowując ukończone poprawki kluczy i ochrony EF
 - Nowy test: `scripts/vm-smoke.py`.
 - Konfiguracja konsoli: `overlay/live/etc/systemd/system/serial-getty@ttyS0.service.d/`.
 - Dokumentacja: `README.md`, `docs/GUIDE_PL.md`, `docs/artwork-prompts.md`.
-- Logo: `overlay/common/usr/share/pixmaps/ravnux-logo.png` — obecność lokalnego pliku nie potwierdza wysłania właściwej wersji.
+- Logo: `overlay/common/usr/share/pixmaps/ravnux-logo.png` — właściwa ozdobna wersja zapisana i potwierdzona na GitHubie w etapie 3.
 
 ## Zapis wykonania
 
@@ -81,3 +79,17 @@ Bazować na bieżącym main, zachowując ukończone poprawki kluczy i ochrony EF
   Testy uruchamiają rzeczywistą funkcję walidacji instalatora na katalogach
   tymczasowych; nie wymagają tworzenia urządzeń blokowych.
   Pełny rozruch i instalacja na dysku VM nadal pozostają w etapach 5–6.
+
+- Etap 3: ukończony. Użytkownik wgrał gotowy PNG w commicie
+  `0834a411bdb65137f535fd2caf8de032f0204a93`. GitHub potwierdza blob
+  `6a071f0b5c209bb43ef061cedd0f2ff4cdf7dee5`, identyczny z odzyskanym logo.
+  Grafika: różowe R na purpurowym tle ze złotymi ornamentami, 1254x1254 RGB.
+  SHA256: `41ad8a1dd956756ac076d1e5af0430e4508f89f118408553a98d415b2be24bd0`.
+  PNG sprawdzony przez Pillow; referencje LightDM i ikony przewodnika zgodne.
+  Kontrola źródeł i przygotowanego profilu `python3 scripts/check.py` zaliczona.
+  `build.sh --prepare-only` potwierdził identyczne kopie logo w live i osadzonym
+  root-overlay; rzeczywista komenda cp instalatora zachowała identyczny PNG.
+  Test przygotowania używał wcześniejszego profilu jako szablonu releng,
+  a nie świeżego upstream Archiso. Nie budowano ISO ani nie testowano GUI.
+  Skrypty build/install i ukończone etapy 1–2 pozostały bez zmian.
+  Grafikę przesłano jako plik, bez Base64 w czacie lub argumentach narzędzi.

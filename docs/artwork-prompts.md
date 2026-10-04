@@ -6,6 +6,10 @@ Use case: stylized-concept. Asset type: default Linux desktop wallpaper for RAVN
 
 ## Logo
 
-Use case: logo-brand. Asset type: Linux distribution RAVNUX logo icon. A clean minimal square logo: exactly one uppercase letter "R", bold geometric modern sans serif, bright pink (#f472b6) centered on a solid deep purple (#4a1768) background. Flat crisp graphic, high legibility at small icon sizes, generous even margins, no gradient, no texture, no shadow, no glow, no border. The letter is upright, correctly shaped and recognizable, with an elegant slightly angular diagonal leg. No other letters or words, no mockup, no watermark. Square 1024x1024 artwork.
+Use case: logo-brand. Asset type: Linux distribution RAVNUX logo icon. Exactly one uppercase letter "R", vivid pink on a deep purple background, decorated with gold edging, symmetrical gold ornaments, fine curved lines and diamond/star motifs. Keep the letter upright and clearly recognizable. No other letters, mockup, watermark or desktop interface. The recovered approved artwork is a 1254x1254 RGB PNG, stored directly at `overlay/common/usr/share/pixmaps/ravnux-logo.png`.
+
+Integration: `scripts/build.sh` copies the common overlay into both the live filesystem and `/usr/share/ravnux/root-overlay`. `scripts/install.sh` copies that embedded overlay into the target system. LightDM uses the logo as its default user image; the offline guide uses it as its desktop-entry icon. No Base64 is stored in configuration or scripts.
+
+Logo SHA256: `41ad8a1dd956756ac076d1e5af0430e4508f89f118408553a98d415b2be24bd0`.
 
 Both assets use the built-in image generator. The generated PNG wallpaper is encoded as JPEG for desktop use, without resizing or changing its composition. Actual dimensions are recorded by the image files; requested sizes are generation preferences.
