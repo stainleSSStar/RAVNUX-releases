@@ -28,24 +28,22 @@ Pełne zbudowanie i rozruch finalnego ISO nie są jeszcze potwierdzone.
 | 1 | Klucze XLibre | Przegląd poprawki, testy keyring, zapis zmian | Gotowe |
 | 2 | Ochrona partycji EFI | Przegląd instalatora, test odrzucenia zajętej EFI, zapis | Gotowe |
 | 3 | Ozdobne logo R ze złotymi wzorami | Porównanie odzyskanej grafiki z GitHubem, kontrola integracji, zapis | Gotowe |
-| 4 | Budowanie i CI | Przegląd nbd, testu VM, konsoli szeregowej i workflow, zapis | Oczekuje |
+| 4 | Budowanie i CI | Przegląd nbd, testu VM, konsoli szeregowej i workflow, zapis | Gotowe; wynik walidacji CI do potwierdzenia |
 | 5 | Budowa ISO | Udany build konkretnego commita, zapis przebiegu i artefaktu | Oczekuje |
 | 6a | Rozruch BIOS | Test VM i zapis wyniku | Oczekuje |
 | 6b | Rozruch UEFI | Test VM i zapis wyniku | Oczekuje |
 | 6c | Instalacja | Instalacja na pustym dysku VM i start z dysku | Oczekuje |
 | 7 | Instrukcja i wydanie | Przewodnik zgodny z przetestowanym ISO, suma kontrolna i publikacja | Oczekuje |
 
-## Następny krok: etap 4
+## Następny krok: etap 5
 
-Przegląd budowania i CI zgodnie z tabelą etapów. Etap 3 zakończony:
-gotowe logo ze złotymi ornamentami jest na main i używa istniejących ścieżek
-LightDM oraz ikony przewodnika. Nie trzeba ponownie kodować ani wysyłać grafiki.
+Etap 4 przygotowany, sprawdzony i zatwierdzony przez użytkownika do zapisu
+na main. Sprawdzić wynik walidacji CI dla commita zawierającego te zmiany.
+Następnie etap 5: ręczna budowa ISO konkretnego commita.
 
-## Pozostałe odzyskane zmiany do późniejszego sprawdzenia
+## Odzyskane zmiany i ich stan
 
-- Budowanie: `scripts/build.sh`, `packages/live.txt`, `.github/workflows/iso.yml`, `scripts/check.py` (walidacja nbd należy do etapu 4).
-- Nowy test: `scripts/vm-smoke.py`.
-- Konfiguracja konsoli: `overlay/live/etc/systemd/system/serial-getty@ttyS0.service.d/`.
+- Budowanie, CI, test VM i konfiguracja konsoli: sprawdzone i zapisane w etapie 4.
 - Dokumentacja: `README.md`, `docs/GUIDE_PL.md`, `docs/artwork-prompts.md`.
 - Logo: `overlay/common/usr/share/pixmaps/ravnux-logo.png` — właściwa ozdobna wersja zapisana i potwierdzona na GitHubie w etapie 3.
 
@@ -93,3 +91,30 @@ LightDM oraz ikony przewodnika. Nie trzeba ponownie kodować ani wysyłać grafi
   a nie świeżego upstream Archiso. Nie budowano ISO ani nie testowano GUI.
   Skrypty build/install i ukończone etapy 1–2 pozostały bez zmian.
   Grafikę przesłano jako plik, bez Base64 w czacie lub argumentach narzędzi.
+
+- Etap 4: wykonany lokalnie na bazie `e603c00907b6b5b92de8ca9cd298c27ad6d0f5ad`.
+  Dodano nbd do pakietów live; upstream hook archiso_pxe_nbd wymaga nbd-client.
+  Przygotowanie profilu nie wymaga roota, odrzuca stare katalogi i dowiązania
+  work/profile/out, sprawdza szablony i SOURCE_DATE_EPOCH przed zapisem.
+  Nie używa stałego katalogu tymczasowego; zachowuje wyłącznie konfigurację
+  initramfs i szablony startowe upstream, a nie użytkowników/usługi ratunkowe.
+  Dodano konsolę szeregową do SYSLINUX, systemd-boot i szablonów GRUB;
+  serial-getty czeka na utworzenie użytkownika live.
+  Test VM ma limity czasu, KVM/TCG, buforowanie konsoli, jawne odrzucanie
+  xorg-server/xf86-input-libinput, logi błędów i raport dopiero po sukcesie.
+  Polecenia do VM są przesyłane jako tekst, bez Base64.
+  Workflow oddziela walidację od ręcznej budowy ISO i opcjonalnych testów VM.
+  Zachowuje logi również po błędzie; shell Bash z pipefail zachowuje wynik
+  budowania przy tee. Nie publikuje wydania; uprawnienia contents pozostają read.
+  README opisuje aktualny sposób budowania i testowania.
+  Testy: 31/31 zaliczonych bez pominięć; kontrola źródeł i profilu zaliczona;
+  składnia Python, YAML workflow i poleceń Bash zaliczona.
+  Przygotowanie profilu sprawdzono na pobranych szablonach tekstowych upstream
+  Archiso `723da192226e1c9d5def9168f13332793c82a85e`.
+  Nie użyto pełnego zainstalowanego pakietu Archiso, nie budowano ISO
+  ani nie uruchomiono prawdziwych VM. Wynik walidacji CI wymaga potwierdzenia.
+  Testy jednostkowe przygotowania używają kontrolowanego szablonu releng;
+  testy logiki gościa VM symulują programy systemowe.
+  Użytkownik zatwierdził zapis zmian do main 2026-10-04.
+  Zapis wykonania odpowiada commitowi zawierającemu ten wpis.
+  Etap 5 nie został rozpoczęty.

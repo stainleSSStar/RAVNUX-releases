@@ -1,6 +1,7 @@
 arch-install-scripts
 mkinitcpio-archiso
 mkinitcpio-nfs-utils
+nbd
 syslinux
 edk2-shell
 memtest86+

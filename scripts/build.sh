@@ -1,21 +1,31 @@
 #!/usr/bin/env bash
 set -euo pipefail
 cd "$(dirname "$(readlink -f "$0")")/.."
-[[ $EUID == 0 ]] || { echo 'Run with sudo on Arch Linux.' >&2; exit 1; }
 prepare_only=false
 if (($#)); then
  [[ $# == 1 && $1 == --prepare-only ]] || { echo 'Usage: build.sh [--prepare-only]' >&2; exit 1; }
  prepare_only=true
 fi
-if ! $prepare_only; then command -v mkarchiso >/dev/null; fi
+if ! $prepare_only; then
+ [[ $EUID == 0 ]] || { echo 'Run with sudo on Arch Linux.' >&2; exit 1; }
+ command -v mkarchiso >/dev/null
+fi
 [[ $(uname -m) == x86_64 ]] || { echo 'x86_64 build host required.' >&2; exit 1; }
-[[ ! -e work && ! -e profile ]] || { echo 'Move/remove previous work/ and profile/ before a fresh build.' >&2; exit 1; }
+for path in work profile out; do
+ [[ ! -e $path && ! -L $path ]] || { echo "Move/remove previous $path/ before a fresh build." >&2; exit 1; }
+done
+export SOURCE_DATE_EPOCH=${SOURCE_DATE_EPOCH:-$(date +%s)}
+[[ $SOURCE_DATE_EPOCH =~ ^[0-9]+$ ]] && date -u --date="@$SOURCE_DATE_EPOCH" >/dev/null || { echo 'Invalid SOURCE_DATE_EPOCH.' >&2; exit 1; }
+releng=${RAVNUX_RELENG_DIR:-/usr/share/archiso/configs/releng}
+for path in profiledef.sh airootfs/etc/mkinitcpio.conf.d/archiso.conf syslinux efiboot; do
+ [[ -e $releng/$path ]] || { echo "Missing Archiso template: $path" >&2; exit 1; }
+done
+python3 scripts/check.py
 # Retain upstream boot templates and initramfs configuration, not its rescue software/services.
-cp -a "${RAVNUX_RELENG_DIR:-/usr/share/archiso/configs/releng}" profile
-cp -a profile/airootfs/etc/mkinitcpio.conf.d /tmp/ravnux-mkinitcpio-$$
-rm -rf profile/airootfs
+mkdir profile
+tar -C "$releng" --exclude=./airootfs -cf - . | tar -C profile -xf -
 mkdir -p profile/airootfs/etc
-mv /tmp/ravnux-mkinitcpio-$$ profile/airootfs/etc/mkinitcpio.conf.d
+cp -a "$releng/airootfs/etc/mkinitcpio.conf.d" profile/airootfs/etc/
 cp -a overlay/common/. profile/airootfs/
 cp overlay/common/etc/pacman.conf profile/pacman.conf
 cp -a overlay/live/. profile/airootfs/
@@ -31,7 +41,8 @@ cat packages/system.txt packages/live.txt | sort -u > profile/packages.x86_64
 # ISO settings are appended to the packaged profile to follow upstream bootmode changes.
 cat >> profile/profiledef.sh <<'EOF'
 iso_name="ravnux"
-iso_label="RAVNUX_$(date --date="@${SOURCE_DATE_EPOCH:-$(date +%s)}" +%Y%m)"
+iso_label="RAVNUX_$(date -u --date="@$SOURCE_DATE_EPOCH" +%Y%m)"
+iso_version="$(date -u --date="@$SOURCE_DATE_EPOCH" +%Y.%m.%d)"
 iso_publisher="RAVNUX <https://github.com/stainleSSStar/RAVNUX>"
 iso_application="RAVNUX XFCE Live and Installer"
 airootfs_image_tool_options=('-comp' 'zstd' '-Xcompression-level' '15' '-b' '1M')
@@ -54,6 +65,11 @@ find profile/efiboot -type f -name '*speech*' -delete
 sed -i '/# Accessibility boot option/,$d' profile/syslinux/archiso_sys-linux.cfg
 # Keep Arch's supported paths (install_dir=arch); brand boot menu titles only.
 find profile/syslinux profile/efiboot -type f \( -name '*.cfg' -o -name '*.conf' \) -exec sed -i 's/Arch Linux/RAVNUX/g' {} +
+# Preserve local output while exposing diagnostics and login on the VM serial port.
+find profile/syslinux profile/efiboot -type f \( -name '*.cfg' -o -name '*.conf' \) -exec sed -i '/archisobasedir=/s/$/ console=ttyS0,115200 console=tty0/' {} +
+if [[ -d profile/grub ]]; then
+ find profile/grub -type f -name '*.cfg' -exec sed -i 's/Arch Linux/RAVNUX/g; /archisobasedir=/s/$/ console=ttyS0,115200 console=tty0/' {} +
+fi
 # Explicitly enable only the services RAVNUX uses.
 units=profile/airootfs/etc/systemd/system
 mkdir -p "$units/multi-user.target.wants" "$units/bluetooth.target.wants"
@@ -76,6 +92,7 @@ pacman --config "$PWD/profile/pacman.conf" -Sy --noconfirm
 pacman --config "$PWD/profile/pacman.conf" -Si "${packages[@]}" >/dev/null
 mkdir -p out
 pacman -Q > out/build-host-packages.txt
+printf 'SOURCE_DATE_EPOCH=%s\n' "$SOURCE_DATE_EPOCH" > out/build-info.txt
 mkarchiso -v -w "$PWD/work" -o "$PWD/out" "$PWD/profile"
 cp work/x86_64/airootfs/usr/share/ravnux/system-packages.txt out/requested-system-packages.txt
 cp work/iso/arch/pkglist.x86_64.txt out/live-packages.txt

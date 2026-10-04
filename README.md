@@ -20,7 +20,7 @@ To Arch rolling release korzystający z repozytoriów **core/extra** i dodatkowe
 
 ## Pobranie ISO z GitHub
 
-Otwórz **Actions → Build RAVNUX ISO**. Po udanym wykonaniu pobierz artefakt `RAVNUX-x86_64-…`. Archiwum zawiera ISO, `SHA256SUMS` i listy pakietów. Obraz powstaje po zmianach kodu w `main`; można też uruchomić **Run workflow**. Artefakty są przechowywane przez 14 dni. W prywatnym repozytorium pobieranie wymaga zalogowania, a kompilacje mogą zużywać limit GitHub Actions.
+Otwórz **Actions → Build RAVNUX ISO → Run workflow** i zaznacz `build_iso`. Push i pull request uruchamiają walidację źródeł oraz przygotowanie profilu; pełna budowa ISO wymaga ręcznego uruchomienia. Opcja `vm_tests` dodatkowo uruchamia testy rozruchu BIOS i UEFI. Po udanej budowie pobierz artefakt `RAVNUX-x86_64-…`: ISO, `SHA256SUMS`, listy pakietów i logi. Logi są zachowywane również po błędzie. Artefakty są przechowywane przez 14 dni. W prywatnym repozytorium pobieranie wymaga zalogowania, a kompilacje mogą zużywać limit GitHub Actions.
 
 ISO obsługuje UEFI x86_64 oraz BIOS. Secure Boot nie jest skonfigurowany. Obraz jest dla zwykłych komputerów x86_64, nie dla Apple Silicon.
 
@@ -35,7 +35,7 @@ cd RAVNUX
 sudo bash scripts/build.sh
 ```
 
-Wynik: `out/ravnux-*.iso`. `sudo bash scripts/build.sh --prepare-only` składa i sprawdza sam profil bez pobierania pakietów ani tworzenia ISO. Przed kolejnym pełnym budowaniem przenieś lub usuń wygenerowane `work/` i `profile/`. Skrypt nie usuwa ich automatycznie. Potrzebny jest internet, kilkanaście GB wolnego miejsca i możliwość używania mount/loop. Mac nie jest natywnym hostem tego procesu; workflow używa oficjalnego kontenera Arch na Linuxie.
+Wynik: `out/ravnux-*.iso`. `bash scripts/build.sh --prepare-only` składa i sprawdza sam profil bez pobierania pakietów ani tworzenia ISO; nie wymaga roota. Przed kolejnym budowaniem przenieś lub usuń wygenerowane `work/`, `profile/` i `out/`. Skrypt nie usuwa ich automatycznie, aby chronić wcześniejsze wyniki. Potrzebny jest internet, kilkanaście GB wolnego miejsca i możliwość używania mount/loop. Mac nie jest natywnym hostem tego procesu; workflow używa oficjalnego kontenera Arch na Linuxie.
 
 Skrypt kopiuje szablony rozruchowe z zainstalowanego `archiso`, zachowuje jego initramfs, ale usuwa zestaw ratunkowy upstreamu. Następnie dodaje wyłącznie pakiety RAVNUX, konfigurację wspólną i dodatki live. `out/live-packages.txt` podaje faktyczne wersje pakietów obrazu, a `build-host-packages.txt` wersje narzędzi kompilacji.
 
@@ -87,6 +87,14 @@ Serwer `xorg-server` i sterownik `xf86-input-libinput` zostały zastąpione prze
 
 Kontrole źródeł weryfikują składnię Bash, XML, format konfiguracji, zestaw pakietów i oddzielenie sesji live od systemu docelowego. Proces budowania dodatkowo sprawdza dostępność wszystkich żądanych pakietów w bazie pacmana i buduje ISO. Nie zastępuje to testu bootowania ani instalacji.
 
+Po zbudowaniu ISO można sprawdzić sesję live w QEMU na Linuxie z pakietami `qemu-system-x86` i `ovmf`:
+
+```sh
+python3 scripts/vm-smoke.py out/*.iso
+```
+
+Domyślnie testowane są BIOS i UEFI; `--mode bios` lub `--mode uefi` wybiera jeden tryb. Skrypt zapisuje logi konsoli/QEMU oraz raport `out/VM-TESTS.txt` dopiero po sukcesie wszystkich wybranych testów. Weryfikuje XFCE/XLibre, usługi, grafiki i instalator w sesji live. Nie przeprowadza instalacji na dysku.
+
 Przed uznaniem obrazu za gotowy sprawdź:
 
 1. Start UEFI i BIOS w maszynie wirtualnej; później na rzeczywistym sprzęcie.
@@ -108,7 +116,8 @@ Firmware i sterowniki otwarte pokrywają wiele urządzeń, ale nie wszystkie. Ko
 - `docs/GUIDE_PL.md` — gotowe polecenia i oczekiwane wyniki testów/instalacji.
 - `scripts/build.sh` — składanie profilu i kompilacja ISO przez Archiso.
 - `scripts/install.sh` — instalacja na zamontowany root.
-- `.github/workflows/iso.yml` — automatyczne budowanie ISO.
+- `scripts/vm-smoke.py` — test sesji live w VM BIOS/UEFI.
+- `.github/workflows/iso.yml` — walidacja CI, ręczna budowa ISO i opcjonalne testy VM.
 
 Kod i oryginalne grafiki motywu: MIT. Pakiety Arch i szablony Archiso zachowują własne licencje. Projekt nie jest oficjalnym wydaniem Arch Linux.
 

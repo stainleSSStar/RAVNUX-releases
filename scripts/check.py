@@ -29,6 +29,7 @@ assert {'fish', 'pipewire-pulse', 'wireplumber', 'linux-firmware', 'sof-firmware
 assert not (root / 'overlay/common/etc/sudoers.d/10-ravnux-live').exists()
 assert not (root / 'overlay/common/etc/lightdm/lightdm.conf.d/50-ravnux-live.conf').exists()
 assert not (root / 'overlay/common/etc/passwd').exists()
+assert 'nbd' in live, 'Archiso PXE NBD hook requires nbd-client'
 # Installer must validate arguments and mount before invoking pacstrap.
 script = (root / 'scripts/install.sh').read_text()
 assert script.index('mountpoint -q') < script.index('pacstrap -C')
@@ -57,4 +58,16 @@ if profile.exists():
         source = (root / 'overlay/common' / path).read_bytes()
         assert (profile / 'airootfs' / path).read_bytes() == source, path
         assert (profile / 'airootfs/usr/share/ravnux/root-overlay' / path).read_bytes() == source, path
+    hook = (profile / 'airootfs/etc/mkinitcpio.conf.d/archiso.conf').read_text()
+    if 'archiso_pxe_nbd' in hook:
+        assert 'nbd' in (profile / 'packages.x86_64').read_text().splitlines()
+    serial = profile / 'airootfs/etc/systemd/system/serial-getty@ttyS0.service.d/10-live-setup.conf'
+    assert 'After=ravnux-live-setup.service' in serial.read_text()
+    assert 'Requires=ravnux-live-setup.service' in serial.read_text()
+    for directory in ('syslinux', 'efiboot', 'grub'):
+        for path in (profile / directory).rglob('*'):
+            if path.suffix in ('.cfg', '.conf'):
+                for line in path.read_text().splitlines():
+                    if 'archisobasedir=' in line and not line.lstrip().startswith('#'):
+                        assert 'console=ttyS0,115200 console=tty0' in line, path
 print('RAVNUX source checks passed' + ('; assembled profile checked' if profile.exists() else ''))
