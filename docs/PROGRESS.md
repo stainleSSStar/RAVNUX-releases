@@ -25,8 +25,8 @@ Pełne zbudowanie i rozruch finalnego ISO nie są jeszcze potwierdzone.
 | Etap | Zakres | Warunek zakończenia | Stan |
 | --- | --- | --- | --- |
 | 0 | Uporządkowanie pracy | Plan zapisany w repozytorium | Gotowe |
-| 1 | Klucze XLibre | Przegląd poprawki, testy keyring, zapis zmian | Następny |
-| 2 | Ochrona partycji EFI | Przegląd instalatora, test odrzucenia zajętej EFI, zapis | Oczekuje |
+| 1 | Klucze XLibre | Przegląd poprawki, testy keyring, zapis zmian | Gotowe |
+| 2 | Ochrona partycji EFI | Przegląd instalatora, test odrzucenia zajętej EFI, zapis | Następny |
 | 3 | Ozdobne logo R ze złotymi wzorami | Porównanie odzyskanej grafiki z GitHubem, kontrola integracji, zapis | Oczekuje |
 | 4 | Budowanie i CI | Przegląd nbd, testu VM, konsoli szeregowej i workflow, zapis | Oczekuje |
 | 5 | Budowa ISO | Udany build konkretnego commita, zapis przebiegu i artefaktu | Oczekuje |
@@ -35,21 +35,18 @@ Pełne zbudowanie i rozruch finalnego ISO nie są jeszcze potwierdzone.
 | 6c | Instalacja | Instalacja na pustym dysku VM i start z dysku | Oczekuje |
 | 7 | Instrukcja i wydanie | Przewodnik zgodny z przetestowanym ISO, suma kontrolna i publikacja | Oczekuje |
 
-## Następny krok: etap 1
+## Następny krok: etap 2
 
-Przejrzeć odzyskane zmiany w:
-- `overlay/common/usr/local/bin/ravnux-keyring-init`;
-- `tests/test_keyring.py`;
-- powiązanej walidacji w `scripts/check.py`.
-
-Porównać je z bieżącym main, uruchomić testy dotyczące kluczy
-i zapisać wyłącznie sprawdzone zmiany tego etapu.
+Sprawdzić ochronę niepustej partycji EFI i katalogu boot w
+`scripts/install.sh` oraz testy w `tests/test_installer.py`.
+Przenieść wyłącznie te poprawki na bieżący main, zachowując poprawkę kluczy
+z etapu 1. Uruchomić testy i zapisać wynik.
 Nie nadpisywać historii repozytorium lokalnym snapshotem.
 
 ## Pozostałe odzyskane zmiany do późniejszego sprawdzenia
 
 - Instalator i testy: `scripts/install.sh`, `tests/test_installer.py`.
-- Budowanie: `scripts/build.sh`, `packages/live.txt`, `.github/workflows/iso.yml`.
+- Budowanie: `scripts/build.sh`, `packages/live.txt`, `.github/workflows/iso.yml`, `scripts/check.py` (walidacja nbd należy do etapu 4).
 - Nowy test: `scripts/vm-smoke.py`.
 - Konfiguracja konsoli: `overlay/live/etc/systemd/system/serial-getty@ttyS0.service.d/`.
 - Dokumentacja: `README.md`, `docs/GUIDE_PL.md`, `docs/artwork-prompts.md`.
@@ -59,3 +56,17 @@ Nie nadpisywać historii repozytorium lokalnym snapshotem.
 
 - Etap 0: odnaleziono kopie robocze, sprawdzono listę niewysłanych zmian
   i zapisano ten plan. W tym etapie nie uruchamiano testów kodu ani budowania ISO.
+
+- Etap 1: ukończony w commicie `f6dfad14b3ae58faaa73f2280f4c58eab0a9b9a6`.
+  Helper obsługuje oddzielny docelowy magazyn kluczy przez `--gpgdir`.
+  Instalator inicjalizuje go, dodaje klucze Arch i zweryfikowany klucz XLibre
+  przed `pacstrap -K`, bez kopiowania prywatnego klucza środowiska live.
+  Sprawdzono zgodność kolejności z kodem upstream:
+  https://github.com/archlinux/arch-install-scripts/blob/master/pacstrap.in .
+  Testy: 11/11 zaliczonych (w tym 5 dotyczących kluczy); walidacja źródeł
+  `python scripts/check.py` zaliczona. Prawdziwy GPG potwierdził fingerprint
+  dołączonego klucza: `0C92313001CFCA27627B9098B97F7C613F359424`.
+  Testy obejmują niewłaściwy fingerprint, osobny keyring, błąd GPG
+  i zatrzymanie przed podpisaniem przy błędzie importu.
+  Ograniczenie: wywołania pacman-key w testach są symulowane;
+  pełna instalacja i test ISO pozostają w etapach 5–6.
