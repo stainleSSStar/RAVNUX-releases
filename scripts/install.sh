@@ -4,12 +4,28 @@ usage() {
  cat <<'HELP'
 Usage: sudo ravnux-install --hostname NAME --username NAME [--timezone Europe/Warsaw]
                            [--target /mnt] [--bios-disk /dev/sdX]
-Mount an EMPTY ext4/btrfs root at /mnt and a dedicated FAT32 ESP at /mnt/boot/efi.
+Mount an EMPTY ext4/btrfs root at /mnt and a dedicated EMPTY FAT32 ESP at /mnt/boot/efi.
 Default: UEFI. BIOS: supply the whole boot disk; GPT requires a BIOS boot partition.
 Requires internet. Does not partition or format disks. Password is requested interactively.
 HELP
 }
 fail() { echo "Error: $*" >&2; exit 1; }
+validate_target_files() {
+ local target=$1 bios_disk=$2 entries
+ # Reject redirected boot paths and existing files before any installation writes.
+ [[ ! -L $target/boot && ! -L $target/boot/efi ]] || fail 'Boot paths must not be symbolic links.'
+ entries=$(find "$target" -mindepth 1 -maxdepth 1 ! -name lost+found ! -name boot -print -quit) || fail 'Cannot inspect target root.'
+ [[ -z $entries ]] || fail 'Target root is not empty.'
+ if [[ -e $target/boot ]]; then
+  [[ -d $target/boot ]] || fail 'Target boot path must be a directory.'
+  entries=$(find "$target/boot" -mindepth 1 -maxdepth 1 ! -name efi ! -name lost+found -print -quit) || fail 'Cannot inspect target boot directory.'
+  [[ -z $entries ]] || fail 'Target boot directory is not empty.'
+ fi
+ if [[ -z $bios_disk ]]; then
+  entries=$(find "$target/boot/efi" -mindepth 1 -maxdepth 1 -print -quit) || fail 'Cannot inspect ESP.'
+  [[ -z $entries ]] || fail 'ESP is not empty; use a dedicated empty EFI partition.'
+ fi
+}
 target=/mnt hostname='' username='' timezone=Europe/Warsaw bios_disk=''
 while (($#)); do
  case "$1" in
@@ -39,17 +55,16 @@ root_device=${root_device%%\[*}
 [[ -b $root_device ]] || fail 'Target root must be a block device.'
 # Encryption/LVM need explicit initramfs and boot arguments, outside this initial installer.
 [[ $(lsblk -dn -o TYPE "$root_device") == part ]] || fail 'Root must be a plain partition; LUKS/LVM are not supported yet.'
+validate_target_files "$target" "$bios_disk"
 if [[ -z $bios_disk ]]; then
- [[ -d /sys/firmware/efi ]] || fail 'Boot the ISO in UEFI mode or specify --bios-disk.'
  mountpoint -q "$target/boot/efi" || fail 'Mount the ESP at target/boot/efi.'
  [[ $(findmnt -n -M "$target/boot/efi" -o FSTYPE) == vfat ]] || fail 'ESP must be FAT32.'
+ [[ -d /sys/firmware/efi ]] || fail 'Boot the ISO in UEFI mode or specify --bios-disk.'
 else
  [[ -b $bios_disk && $(lsblk -dn -o TYPE "$bios_disk") == disk ]] || fail 'BIOS boot device must be a whole disk.'
  root_parent=$(lsblk -dn -o PKNAME "$root_device")
  [[ $(readlink -f "$bios_disk") == /dev/$root_parent ]] || fail 'BIOS boot disk must contain the target root partition.'
 fi
-# Reject an existing OS. Boot directories and filesystem lost+found are allowed.
-[[ -z $(find "$target" -mindepth 1 -maxdepth 1 ! -name lost+found ! -name boot -print -quit) ]] || fail 'Target root is not empty.'
 packages_file=/usr/share/ravnux/system-packages.txt
 overlay=/usr/share/ravnux/root-overlay
 [[ -f $packages_file && -d $overlay ]] || fail 'Run this installer from the RAVNUX live ISO.'
