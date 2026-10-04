@@ -2,8 +2,12 @@
 set -euo pipefail
 [[ $EUID == 0 ]] || { echo 'Run as root.' >&2; exit 1; }
 key=${1:-/usr/share/ravnux/keyring/xlibre-archlinux.asc}
+keyring=()
+if (($# >= 2)); then
+ keyring=(--gpgdir "$2")
+fi
 expected=0C92313001CFCA27627B9098B97F7C613F359424
 actual=$(gpg --batch --show-keys --with-colons "$key" | awk -F: '$1 == "fpr" && !found { print $10; found=1 }')
 [[ $actual == "$expected" ]] || { echo 'XLibre signing key fingerprint mismatch.' >&2; exit 1; }
-pacman-key --add "$key"
-pacman-key --lsign-key "$expected"
+pacman-key "${keyring[@]}" --add "$key"
+pacman-key "${keyring[@]}" --lsign-key "$expected"

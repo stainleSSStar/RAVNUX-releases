@@ -62,6 +62,13 @@ mapfile -t packages < "$packages_file"
 packages+=(grub efibootmgr)
 [[ $root_type != btrfs ]] || packages+=(btrfs-progs)
 systemctl start pacman-init.service
+# pacstrap -K creates a separate target keyring. Seed it before resolving
+# signed XLibre packages; the host's private key must not be copied to disk.
+install -d -m 0755 "$target/etc/pacman.d"
+target_keyring=$target/etc/pacman.d/gnupg
+pacman-key --gpgdir "$target_keyring" --init
+pacman-key --gpgdir "$target_keyring" --populate archlinux
+ravnux-keyring-init /usr/share/ravnux/keyring/xlibre-archlinux.asc "$target_keyring"
 pacstrap -C /etc/pacman.conf -K "$target" "${packages[@]}"
 cp -a --remove-destination "$overlay/." "$target/"
 chmod 0440 "$target/etc/sudoers.d/20-ravnux-wheel"
