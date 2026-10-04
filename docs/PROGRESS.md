@@ -28,7 +28,7 @@ Pełne zbudowanie i rozruch finalnego ISO nie są jeszcze potwierdzone.
 | 1 | Klucze XLibre | Przegląd poprawki, testy keyring, zapis zmian | Gotowe |
 | 2 | Ochrona partycji EFI | Przegląd instalatora, test odrzucenia zajętej EFI, zapis | Gotowe |
 | 3 | Ozdobne logo R ze złotymi wzorami | Porównanie odzyskanej grafiki z GitHubem, kontrola integracji, zapis | Gotowe |
-| 4 | Budowanie i CI | Przegląd nbd, testu VM, konsoli szeregowej i workflow, zapis | Gotowe; wynik walidacji CI do potwierdzenia |
+| 4 | Budowanie i CI | Przegląd nbd, testu VM, konsoli szeregowej i workflow, zapis | Gotowe; CI zaliczone |
 | 5 | Budowa ISO | Udany build konkretnego commita, zapis przebiegu i artefaktu | Oczekuje |
 | 6a | Rozruch BIOS | Test VM i zapis wyniku | Oczekuje |
 | 6b | Rozruch UEFI | Test VM i zapis wyniku | Oczekuje |
@@ -37,8 +37,9 @@ Pełne zbudowanie i rozruch finalnego ISO nie są jeszcze potwierdzone.
 
 ## Następny krok: etap 5
 
-Etap 4 przygotowany, sprawdzony i zatwierdzony przez użytkownika do zapisu
-na main. Sprawdzić wynik walidacji CI dla commita zawierającego te zmiany.
+Etap 4 zapisany na main w commicie `6c1cb87152f16593a90cc74e1aa8ed2284b6f48a`.
+Walidacja GitHub Actions zaliczona: źródła, testy oraz przygotowanie profilu
+na zainstalowanym pakiecie Archiso w oficjalnym kontenerze Arch Linux.
 Następnie etap 5: ręczna budowa ISO konkretnego commita.
 
 ## Odzyskane zmiany i ich stan
@@ -111,10 +112,14 @@ Następnie etap 5: ręczna budowa ISO konkretnego commita.
   składnia Python, YAML workflow i poleceń Bash zaliczona.
   Przygotowanie profilu sprawdzono na pobranych szablonach tekstowych upstream
   Archiso `723da192226e1c9d5def9168f13332793c82a85e`.
-  Nie użyto pełnego zainstalowanego pakietu Archiso, nie budowano ISO
-  ani nie uruchomiono prawdziwych VM. Wynik walidacji CI wymaga potwierdzenia.
+  Lokalnie użyto pobranych szablonów tekstowych. Następnie GitHub Actions
+  potwierdził przygotowanie profilu na pełnym zainstalowanym pakiecie Archiso.
+  Nie budowano ISO ani nie uruchomiono prawdziwych VM.
   Testy jednostkowe przygotowania używają kontrolowanego szablonu releng;
   testy logiki gościa VM symulują programy systemowe.
   Użytkownik zatwierdził zapis zmian do main 2026-10-04.
-  Zapis wykonania odpowiada commitowi zawierającemu ten wpis.
+  Commit kodu: `6c1cb87152f16593a90cc74e1aa8ed2284b6f48a`.
+  GitHub Actions: https://github.com/stainleSSStar/RAVNUX/actions/runs/37196053888 .
+  Job validate zakończony sukcesem, wszystkie jego kroki zaliczone.
+  Job iso pominięty zgodnie z ręcznym trybem budowania; etap 4 nie buduje ISO.
   Etap 5 nie został rozpoczęty.
