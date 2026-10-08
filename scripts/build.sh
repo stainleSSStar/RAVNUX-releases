@@ -66,9 +66,10 @@ sed -i '/# Accessibility boot option/,$d' profile/syslinux/archiso_sys-linux.cfg
 # Keep Arch's supported paths (install_dir=arch); brand boot menu titles only.
 find profile/syslinux profile/efiboot -type f \( -name '*.cfg' -o -name '*.conf' \) -exec sed -i 's/Arch Linux/RAVNUX/g' {} +
 # Preserve local output while exposing diagnostics and login on the VM serial port.
-find profile/syslinux profile/efiboot -type f \( -name '*.cfg' -o -name '*.conf' \) -exec sed -i '/archisobasedir=/s/$/ console=ttyS0,115200 console=tty0/' {} +
+# Serial last: /dev/console is ttyS0, so initramfs/systemd messages reach the VM smoke test.
+find profile/syslinux profile/efiboot -type f \( -name '*.cfg' -o -name '*.conf' \) -exec sed -i '/archisobasedir=/s/$/ console=tty0 console=ttyS0,115200/' {} +
 if [[ -d profile/grub ]]; then
- find profile/grub -type f -name '*.cfg' -exec sed -i 's/Arch Linux/RAVNUX/g; /archisobasedir=/s/$/ console=ttyS0,115200 console=tty0/' {} +
+ find profile/grub -type f -name '*.cfg' -exec sed -i 's/Arch Linux/RAVNUX/g; /archisobasedir=/s/$/ console=tty0 console=ttyS0,115200/' {} +
 fi
 # Explicitly enable only the services RAVNUX uses.
 units=profile/airootfs/etc/systemd/system
@@ -81,8 +82,8 @@ ln -s /usr/lib/systemd/system/lightdm.service "$units/display-manager.service"
 ln -s /usr/lib/systemd/system/graphical.target "$units/default.target"
 ln -s /etc/systemd/system/ravnux-live-setup.service "$units/multi-user.target.wants/ravnux-live-setup.service"
 # Enable the serial getty explicitly: with console=tty0 last, getty-generator does not spawn it,
-# leaving the VM smoke test without a login prompt on ttyS0.
-ln -s /usr/lib/systemd/system/serial-getty@ttyS0.service "$units/multi-user.target.wants/serial-getty@ttyS0.service"
+# leaving the VM smoke test without a login prompt on ttyS0. The symlink must target the template.
+ln -s /usr/lib/systemd/system/serial-getty@.service "$units/multi-user.target.wants/serial-getty@ttyS0.service"
 : > profile/airootfs/etc/machine-id
 python3 scripts/check.py
 if $prepare_only; then exit 0; fi

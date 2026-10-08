@@ -69,5 +69,5 @@ if profile.exists():
             if path.suffix in ('.cfg', '.conf'):
                 for line in path.read_text().splitlines():
                     if 'archisobasedir=' in line and not line.lstrip().startswith('#'):
-                        assert 'console=ttyS0,115200 console=tty0' in line, path
+                        assert 'console=tty0 console=ttyS0,115200' in line, path
 print('RAVNUX source checks passed' + ('; assembled profile checked' if profile.exists() else ''))

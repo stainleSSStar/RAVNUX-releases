@@ -190,3 +190,15 @@ i etap 7 (instrukcja zgodna z przetestowanym ISO, suma kontrolna, publikacja).
   `serial-getty@ttyS0` jawnie (konto live `ravnux` ma puste hasło, więc login
   szeregowy działa), workflow CI wraca do KVM z odwrotem do TCG; opcja `--no-kvm`
   pozostaje dostępna lokalnie.
+
+  Szósta budowa (run 37825845995, commit `94bf12e`): ISO zbudowane i opublikowane
+  jako `v2026.10.08-r19`; KVM działa (bez ostrzeżeń QEMU), ale `login:` na ttyS0
+  nadal się nie pojawia w 30 minut. Ustalone dwie przyczyny: (1) dowiązanie
+  włączające getty wskazywało na nieistniejący plik instancji
+  `serial-getty@ttyS0.service` zamiast szablonu `serial-getty@.service`
+  (kanoniczna forma `systemctl enable`); (2) konsola szeregowa była przed ostatnią,
+  więc komunikaty initramfs/systemd trafiały wyłącznie na tty0 i serial nie
+  pokazywał postępu rozruchu. Poprawki: dowiązanie wskazuje szablon, a kolejność
+  konsol zmieniona na `console=tty0 console=ttyS0,115200` — /dev/console
+  to ttyS0, dzięki czemu test VM widzi pełny rozruch i login; asercja w
+  `scripts/check.py` zaktualizowana do nowej kolejności.
