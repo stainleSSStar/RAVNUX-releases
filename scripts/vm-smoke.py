@@ -69,7 +69,7 @@ def boot(iso, mode, out, timeout=600):
                    '-cdrom', str(iso), '-boot', 'd', '-display', 'none',
                    '-serial', f'unix:{serial},server=on,wait=off',
                    '-nic', 'user,model=virtio-net-pci', '-no-reboot']
-        command += ['-accel', 'kvm:tcg' if os.access('/dev/kvm', os.R_OK | os.W_OK) else 'tcg']
+        command += ['-machine', 'accel=kvm:tcg' if os.access('/dev/kvm', os.R_OK | os.W_OK) else 'accel=tcg']
         if mode == 'uefi':
             code = Path('/usr/share/OVMF/OVMF_CODE_4M.fd')
             variables = Path('/usr/share/OVMF/OVMF_VARS_4M.fd')

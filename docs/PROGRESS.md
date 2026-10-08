@@ -29,25 +29,20 @@ Pełne zbudowanie i rozruch finalnego ISO nie są jeszcze potwierdzone.
 | 2 | Ochrona partycji EFI | Przegląd instalatora, test odrzucenia zajętej EFI, zapis | Gotowe |
 | 3 | Ozdobne logo R ze złotymi wzorami | Porównanie odzyskanej grafiki z GitHubem, kontrola integracji, zapis | Gotowe |
 | 4 | Budowanie i CI | Przegląd nbd, testu VM, konsoli szeregowej i workflow, zapis | Gotowe; CI zaliczone |
-| 5 | Budowa ISO | Udany build konkretnego commita, zapis przebiegu i artefaktu | W toku |
+| 5 | Budowa ISO | Udany build konkretnego commita, zapis przebiegu i artefaktu | Gotowe; ISO na wydaniu v2026.10.08-r14 |
 | 6a | Rozruch BIOS | Test VM i zapis wyniku | Oczekuje |
 | 6b | Rozruch UEFI | Test VM i zapis wyniku | Oczekuje |
 | 6c | Instalacja | Instalacja na pustym dysku VM i start z dysku | Oczekuje |
 | 7 | Instrukcja i wydanie | Przewodnik zgodny z przetestowanym ISO, suma kontrolna i publikacja | Oczekuje |
 
-## Następny krok: etap 5 — powtórna budowa z publikacją ISO
+## Następny krok: etapy 6a/6b — testy rozruchu VM
 
-Pierwsza budowa ISO (run 37809364706, commit `ffd453d`) zakończyła się
-pomyślną kompilacją obrazu, ale wysyłka artefaktu została odrzucona:
-prywatne repozytorium na darmowym planie ma limit 500 MB miejsca na
-artefakty, a ISO ma ok. 1,6 GB. Zgodnie z decyzją użytkownika ISO będzie
-publikowane jako wydanie w publicznym repozytorium
-`stainleSSStar/RAVNUX-releases` z użyciem sekretu `RELEASE_TOKEN`.
-Testy VM w tej samej kompilacji nie przeszły: QEMU w trybie BIOS
-zakończył się natychmiast po starcie (`bios: QEMU failed to start`);
-stderr QEMU trafi do `out/vm-bios-qemu.log` i zostanie dołączony
-do wydania. Następnie: powtórna budowa z publikacją, analiza logów VM
-i poprawka etapów 6a/6b.
+ISO jest budowane i publikowane (etap 5 zakończony, wydanie
+`v2026.10.08-r14`). Testy VM nie przechodziły przez nieprawidłową flagę
+QEMU `-accel kvm:tcg`; poprawiono na `-machine accel=kvm:tcg`.
+Następnie: powtórna budowa z `vm_tests=true`, weryfikacja rozruchu
+BIOS i UEFI, potem etap 6c (instalacja na dysku VM) i etap 7
+(instrukcja zgodna z przetestowanym ISO, suma kontrolna, publikacja).
 
 ## Odzyskane zmiany i ich stan
 
@@ -154,6 +149,16 @@ i poprawka etapów 6a/6b.
   0 B (API GitHub odrzuca puste pliki: `HTTP 400: Bad Content-Length`)
   i usunął wydanie. Artefakt Actions ponownie odrzucony limitem przydziału.
   Poprawki po drugiej budowie: wydanie tworzone jest najpierw bez plików,
-  a zasoby dołączane pojedynczo z pominięciem pustych plików; błąd pojedynczego
+  a zasoby dołączane pojedynczo z pominięciem pustych plików; błąd pojedyncznego
   zasobów nie usuwa wydania. `vm-smoke.py` wypisuje teraz wyjście QEMU
   w komunikacie błędu startu, dzięki czemu diagnostyka trafia do logu zadania.
+
+  Trzecia budowa (run 37813175724, commit `559891b`): ISO zbudowane i opublikowane
+  jako wydanie `v2026.10.08-r14` w repozytorium wydań: ISO 1 713 733 632 B,
+  `SHA256SUMS`, listy pakietów i logi. Artefakt Actions nadal odrzucony limitem.
+  Diagnostyka VM ustaliła przyczynę natychmiastowego kończenia QEMU:
+  składnia `kvm:tcg` jest nieprawidłowa dla flagi `-accel` (dotyczy wyłącznie
+  `-machine accel=`); host CI ma dostępny `/dev/kvm`, więc wybierana była
+  zawsze błędna wartość. Poprawka: `-machine accel=kvm:tcg` z automatycznym
+  odwrotom do TCG, gdy KVM niedostępne. Etap 5 (budowa ISO) uznany za ukończony;
+  etapy 6a/6b oczekują na powtórny test VM.
