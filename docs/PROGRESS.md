@@ -35,14 +35,14 @@ Pełne zbudowanie i rozruch finalnego ISO nie są jeszcze potwierdzone.
 | 6c | Instalacja | Instalacja na pustym dysku VM i start z dysku | Oczekuje |
 | 7 | Instrukcja i wydanie | Przewodnik zgodny z przetestowanym ISO, suma kontrolna i publikacja | Oczekuje |
 
-## Następny krok: etapy 6a/6b — testy rozruchu VM
+## Następny krok: etapy 6a/6b — testy rozruchu VM w TCG
 
-ISO jest budowane i publikowane (etap 5 zakończony, wydanie
-`v2026.10.08-r14`). Testy VM nie przechodziły przez nieprawidłową flagę
-QEMU `-accel kvm:tcg`; poprawiono na `-machine accel=kvm:tcg`.
-Następnie: powtórna budowa z `vm_tests=true`, weryfikacja rozruchu
-BIOS i UEFI, potem etap 6c (instalacja na dysku VM) i etap 7
-(instrukcja zgodna z przetestowanym ISO, suma kontrolna, publikacja).
+ISO jest budowane i publikowane (etap 5 zakończony, wydania `v2026.10.08-r14`
+i `v2026.10.08-r15`). Jądro gościa zawiesza się na hoście CI po ok. 0,2 s
+w zagnieżdżonym KVM; workflow CI testuje teraz w TCG (`--no-kvm`), lokalnie
+KVM pozostaje domyślne. Następnie: powtórna budowa z `vm_tests=true`,
+weryfikacja rozruchu BIOS i UEFI, potem etap 6c (instalacja na dysku VM)
+i etap 7 (instrukcja zgodna z przetestowanym ISO, suma kontrolna, publikacja).
 
 ## Odzyskane zmiany i ich stan
 
@@ -162,3 +162,16 @@ BIOS i UEFI, potem etap 6c (instalacja na dysku VM) i etap 7
   zawsze błędna wartość. Poprawka: `-machine accel=kvm:tcg` z automatycznym
   odwrotom do TCG, gdy KVM niedostępne. Etap 5 (budowa ISO) uznany za ukończony;
   etapy 6a/6b oczekują na powtórny test VM.
+
+  Czwarta budowa (run 37815082719, commit `155b176`): ISO zbudowane i opublikowane
+  jako `v2026.10.08-r15`. Po poprawce akceleratora QEMU startuje i konsola
+  szeregowa działa: menu ISOLINUX, załadowanie jądra i initramfs oraz pierwszy
+  komunikat jądra są widoczne. Jądro gościa zatrzymuje się jednak po ok. 0,2 s
+  (ostatnia linia: `virt/tdx: TDX not supported by the host platform`) i nie
+  drukuje nic do upływu limitu czasu. Objaw wskazuje na zawieszanie gościa
+  w zagnieżdżonym KVM hosta CI, a nie na błąd obrazu: łańcuch rozruchu ISO
+  działa do momentu startu jądra. Poprawka: opcja `--no-kvm` w `vm-smoke.py`
+  wymusza TCG (deterministyczna emulacja) i jest używana w workflow CI;
+  lokalnie KVM pozostaje domyślne. Pętla oczekiwania na sesję XFCE wydłużona
+  do 300 s ze względu na wolniejsze TCG. Artefakt Actions w tej budowie
+  przeszedł (limit zwolnił się po przeliczeniu przydziału).

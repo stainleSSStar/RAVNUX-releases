@@ -12,7 +12,7 @@ import time
 
 GUEST_SCRIPT = '''set -euo pipefail
 trap 'printf "\\nRAVNUX_VM_FAIL\\n"' ERR
-for attempt in {1..60}; do
+for attempt in {1..300}; do
  if pgrep -u ravnux -x xfce4-session >/dev/null && test -S /tmp/.X11-unix/X0; then break; fi
  sleep 1
 done
@@ -61,7 +61,7 @@ class SerialConsole:
         self.cursor = self.data.index(pattern, self.cursor) + len(pattern)
 
 
-def boot(iso, mode, out, timeout=600):
+def boot(iso, mode, out, timeout=600, allow_kvm=True):
     with tempfile.TemporaryDirectory(prefix='ravnux-vm-') as directory:
         directory = Path(directory)
         serial = directory / 'serial.sock'
@@ -69,7 +69,10 @@ def boot(iso, mode, out, timeout=600):
                    '-cdrom', str(iso), '-boot', 'd', '-display', 'none',
                    '-serial', f'unix:{serial},server=on,wait=off',
                    '-nic', 'user,model=virtio-net-pci', '-no-reboot']
-        command += ['-machine', 'accel=kvm:tcg' if os.access('/dev/kvm', os.R_OK | os.W_OK) else 'accel=tcg']
+        if allow_kvm and os.access('/dev/kvm', os.R_OK | os.W_OK):
+            command += ['-machine', 'accel=kvm:tcg']
+        else:
+            command += ['-machine', 'accel=tcg']
         if mode == 'uefi':
             code = Path('/usr/share/OVMF/OVMF_CODE_4M.fd')
             variables = Path('/usr/share/OVMF/OVMF_VARS_4M.fd')
@@ -125,6 +128,8 @@ def main():
     parser.add_argument('--output', type=Path, default=Path('out'))
     parser.add_argument('--mode', choices=('bios', 'uefi', 'both'), default='both')
     parser.add_argument('--timeout', type=int, default=600)
+    parser.add_argument('--no-kvm', action='store_true',
+                        help='Force TCG even when /dev/kvm is available (e.g. CI runners with unreliable KVM)')
     args = parser.parse_args()
     args.output.mkdir(parents=True, exist_ok=True)
     report = args.output / 'VM-TESTS.txt'
@@ -135,7 +140,7 @@ def main():
         parser.error('qemu-system-x86_64 is required')
     modes = ('bios', 'uefi') if args.mode == 'both' else (args.mode,)
     for mode in modes:
-        boot(args.iso.resolve(), mode, args.output, args.timeout)
+        boot(args.iso.resolve(), mode, args.output, args.timeout, allow_kvm=not args.no_kvm)
     (args.output / 'VM-TESTS.txt').write_text(
         f'PASS: {", ".join(modes)} ISO boot; XFCE session; XLibre display; '
         'NetworkManager, LightDM, Bluetooth services; bundled logo, wallpaper and installer.\n'

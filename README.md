@@ -95,7 +95,7 @@ Po zbudowaniu ISO można sprawdzić sesję live w QEMU na Linuxie z pakietami `q
 python3 scripts/vm-smoke.py out/*.iso
 ```
 
-Domyślnie testowane są BIOS i UEFI; `--mode bios` lub `--mode uefi` wybiera jeden tryb. Skrypt zapisuje logi konsoli/QEMU oraz raport `out/VM-TESTS.txt` dopiero po sukcesie wszystkich wybranych testów. Weryfikuje XFCE/XLibre, usługi, grafiki i instalator w sesji live. Nie przeprowadza instalacji na dysku.
+Domyślnie testowane są BIOS i UEFI; `--mode bios` lub `--mode uefi` wybiera jeden tryb. Na hostach, gdzie KVM zawiesza gościa (spotykane na runnerach CI), użyj `--no-kvm`, aby wymusić TCG. Skrypt zapisuje logi konsoli/QEMU oraz raport `out/VM-TESTS.txt` dopiero po sukcesie wszystkich wybranych testów. Weryfikuje XFCE/XLibre, usługi, grafiki i instalator w sesji live. Nie przeprowadza instalacji na dysku.
 
 Przed uznaniem obrazu za gotowy sprawdź:
 
