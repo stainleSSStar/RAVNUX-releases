@@ -45,7 +45,7 @@ class BuildPreparation(unittest.TestCase):
         for name in ('syslinux/archiso_sys-linux.cfg', 'efiboot/loader/entries/01-linux.conf', 'grub/grub.cfg'):
             text = (profile / name).read_text()
             self.assertIn('archisobasedir=%INSTALL_DIR%', text)
-            self.assertIn('console=ttyS0,115200 console=tty0', text)
+            self.assertIn('console=tty0 console=ttyS0,115200', text)
             self.assertNotIn('LABEL speech', text)
         self.assertFalse((profile / 'efiboot/loader/entries/02-speech-linux.conf').exists())
         source = self.repo / 'overlay/common/usr/share/pixmaps/ravnux-logo.png'
