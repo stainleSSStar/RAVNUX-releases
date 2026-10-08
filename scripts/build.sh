@@ -80,6 +80,9 @@ ln -s /usr/lib/systemd/system/bluetooth.service "$units/bluetooth.target.wants/b
 ln -s /usr/lib/systemd/system/lightdm.service "$units/display-manager.service"
 ln -s /usr/lib/systemd/system/graphical.target "$units/default.target"
 ln -s /etc/systemd/system/ravnux-live-setup.service "$units/multi-user.target.wants/ravnux-live-setup.service"
+# Enable the serial getty explicitly: with console=tty0 last, getty-generator does not spawn it,
+# leaving the VM smoke test without a login prompt on ttyS0.
+ln -s /usr/lib/systemd/system/serial-getty@ttyS0.service "$units/multi-user.target.wants/serial-getty@ttyS0.service"
 : > profile/airootfs/etc/machine-id
 python3 scripts/check.py
 if $prepare_only; then exit 0; fi

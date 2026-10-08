@@ -175,3 +175,18 @@ i etap 7 (instrukcja zgodna z przetestowanym ISO, suma kontrolna, publikacja).
   lokalnie KVM pozostaje domyślne. Pętla oczekiwania na sesję XFCE wydłużona
   do 300 s ze względu na wolniejsze TCG. Artefakt Actions w tej budowie
   przeszedł (limit zwolnił się po przeliczeniu przydziału).
+
+  Piąta budowa (run 37820665422, commit `feb3a1c`): ISO zbudowane i opublikowane
+  jako `v2026.10.08-r18`; test VM w TCG kończy się tym samym objawem co w KVM:
+  jądro drukuje `virt/tdx: TDX not supported by the host platform` i konsola
+  milczy do upływu limitu. Analiza: komunikat TDX jest zwykłą informacją nowszych
+  jąder Arch, wpisy rozruchowe zawierają `quiet`, a `console=tty0` jest ostatnie,
+  więc komunikaty przestrzeni użytkownika trafiają tylko na ekran. Prawdziwa
+  przyczyna braku `login:` na ttyS0: `serial-getty@ttyS0` nie był włączony —
+  build.sh włącza jawnie tylko wybrane jednostki, a generator getty systemd
+  nie uruchamia getty szeregowego, gdy ostatnią konsolą jest tty0. KVM hosta CI
+  najprawdopodobniej działał poprawnie; poprzednie „zawieszenia” były normalnym
+  rozruchem z zamkniętą konsolą szeregową. Poprawki: build.sh włącza
+  `serial-getty@ttyS0` jawnie (konto live `ravnux` ma puste hasło, więc login
+  szeregowy działa), workflow CI wraca do KVM z odwrotem do TCG; opcja `--no-kvm`
+  pozostaje dostępna lokalnie.
