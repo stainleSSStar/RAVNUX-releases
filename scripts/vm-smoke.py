@@ -86,7 +86,10 @@ def boot(iso, mode, out, timeout=600):
             console = SerialConsole(connection, process, timeout)
             try:
                 while True:
-                    if process.poll() is not None or time.monotonic() > console.deadline:
+                    if process.poll() is not None:
+                        qemu_output = error_path.read_bytes()[-4000:].decode('utf-8', 'replace')
+                        raise RuntimeError(f'{mode}: QEMU failed to start\nQEMU output:\n{qemu_output}')
+                    if time.monotonic() > console.deadline:
                         raise RuntimeError(f'{mode}: QEMU failed to start')
                     try:
                         connection.connect(str(serial))

@@ -146,3 +146,14 @@ i poprawka etapów 6a/6b.
   wydanie bez zaliczonych testów VM jest oznaczane jako prerelease,
   a limit czasu VM podniesiono do 1800 s na wypadek powolnego TCG.
   README zaktualizowany o sposób pobrania ISO z repozytorium wydań.
+
+  Druga budowa (run 37811625311, commit `e05222c`): ISO ponownie zbudowane;
+  testy VM znów nie wystartowały (QEMU kończy się natychmiast w trybie BIOS,
+  ten sam błąd co w pierwszej budowie). Publikacja wydania nie doszła do skutku:
+  `gh release create` przerwał wysyłkę na pliku `vm-bios-serial.log` o rozmiarze
+  0 B (API GitHub odrzuca puste pliki: `HTTP 400: Bad Content-Length`)
+  i usunął wydanie. Artefakt Actions ponownie odrzucony limitem przydziału.
+  Poprawki po drugiej budowie: wydanie tworzone jest najpierw bez plików,
+  a zasoby dołączane pojedynczo z pominięciem pustych plików; błąd pojedynczego
+  zasobów nie usuwa wydania. `vm-smoke.py` wypisuje teraz wyjście QEMU
+  w komunikacie błędu startu, dzięki czemu diagnostyka trafia do logu zadania.

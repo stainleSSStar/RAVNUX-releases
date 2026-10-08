@@ -98,4 +98,16 @@ jobs:
           gh release create "$tag" --repo "$RELEASE_REPO" \
             --title "RAVNUX ${iso_version} (build ${GITHUB_RUN_NUMBER})" \
             --notes "$notes" \
-            "${publish[@]}" "${assets[@]}"
+            "${publish[@]}"
+          failures=0
+          for asset in "${assets[@]}"; do
+            if [[ ! -s "$asset" ]]; then
+              echo "Skipping empty file: $asset"
+              continue
+            fi
+            if ! gh release upload "$tag" "$asset" --repo "$RELEASE_REPO"; then
+              echo "::warning::Failed to upload $asset"
+              failures=1
+            fi
+          done
+          exit "$failures"
