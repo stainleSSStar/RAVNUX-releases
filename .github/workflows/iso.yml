@@ -46,6 +46,7 @@ jobs:
     steps:
       - uses: actions/checkout@v4
       - name: Build in official Arch Linux container
+        id: build
         run: |
           mkdir -p ci-logs
           docker run --rm --privileged \
@@ -53,17 +54,20 @@ jobs:
             -v "$PWD:/build" -w /build archlinux:base-devel \
             bash -euc 'pacman -Syu --noconfirm archiso python; bash scripts/build.sh' 2>&1 | tee ci-logs/build.log
       - name: Make output writable for VM logs
-        if: always()
+        if: always() && steps.build.outcome != 'skipped'
         run: |
           if [ -d out ]; then sudo chown -R "$(id -u):$(id -g)" out; fi
       - name: Boot ISO in BIOS and UEFI virtual machines
-        if: inputs.vm_tests
+        id: vm
+        if: inputs.vm_tests && steps.build.outcome == 'success'
+        continue-on-error: true
         run: |
           sudo apt-get update
           sudo apt-get install -y qemu-system-x86 ovmf
-          python3 scripts/vm-smoke.py out/*.iso 2>&1 | tee ci-logs/vm.log
+          python3 scripts/vm-smoke.py --timeout 1800 out/*.iso 2>&1 | tee ci-logs/vm.log
       - name: Upload ISO, checksums and package manifests
-        if: always()
+        if: always() && steps.build.outcome == 'success'
+        continue-on-error: true
         uses: actions/upload-artifact@v4
         with:
           name: RAVNUX-x86_64-${{ github.run_number }}
@@ -73,3 +77,25 @@ jobs:
           if-no-files-found: warn
           compression-level: 0
           retention-days: 14
+      - name: Publish ISO to the public releases repository
+        if: always() && steps.build.outcome == 'success'
+        env:
+          GH_TOKEN: ${{ secrets.RELEASE_TOKEN }}
+          RELEASE_REPO: stainleSSStar/RAVNUX-releases
+        run: |
+          set -euo pipefail
+          shopt -s nullglob
+          iso_version="$(date -u --date="@$(sed -n 's/^SOURCE_DATE_EPOCH=//p' out/build-info.txt)" +%Y.%m.%d)"
+          tag="v${iso_version}-r${GITHUB_RUN_NUMBER}"
+          notes="RAVNUX live/installer ISO built from commit ${GITHUB_SHA} (workflow run ${GITHUB_RUN_NUMBER}).
+          Release assets: ISO image, SHA256SUMS, package manifests, build/VM logs.
+          VM boot tests: ${{ steps.vm.outcome == 'success' && 'passed (BIOS and UEFI)' || 'not passed; see logs' }}."
+          publish=(--prerelease)
+          if [[ '${{ inputs.vm_tests }}' == true && '${{ steps.vm.outcome }}' == success ]]; then
+            publish=(--latest)
+          fi
+          assets=(out/*.iso out/SHA256SUMS out/*.txt out/vm-*.log ci-logs/*.log)
+          gh release create "$tag" --repo "$RELEASE_REPO" \
+            --title "RAVNUX ${iso_version} (build ${GITHUB_RUN_NUMBER})" \
+            --notes "$notes" \
+            "${publish[@]}" "${assets[@]}"

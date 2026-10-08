@@ -1,6 +1,6 @@
 # RAVNUX — postęp prac
 
-Aktualizacja: 2026-10-04.
+Aktualizacja: 2026-10-08.
 
 ## Zasady kontynuacji
 
@@ -29,18 +29,25 @@ Pełne zbudowanie i rozruch finalnego ISO nie są jeszcze potwierdzone.
 | 2 | Ochrona partycji EFI | Przegląd instalatora, test odrzucenia zajętej EFI, zapis | Gotowe |
 | 3 | Ozdobne logo R ze złotymi wzorami | Porównanie odzyskanej grafiki z GitHubem, kontrola integracji, zapis | Gotowe |
 | 4 | Budowanie i CI | Przegląd nbd, testu VM, konsoli szeregowej i workflow, zapis | Gotowe; CI zaliczone |
-| 5 | Budowa ISO | Udany build konkretnego commita, zapis przebiegu i artefaktu | Oczekuje |
+| 5 | Budowa ISO | Udany build konkretnego commita, zapis przebiegu i artefaktu | W toku |
 | 6a | Rozruch BIOS | Test VM i zapis wyniku | Oczekuje |
 | 6b | Rozruch UEFI | Test VM i zapis wyniku | Oczekuje |
 | 6c | Instalacja | Instalacja na pustym dysku VM i start z dysku | Oczekuje |
 | 7 | Instrukcja i wydanie | Przewodnik zgodny z przetestowanym ISO, suma kontrolna i publikacja | Oczekuje |
 
-## Następny krok: etap 5
+## Następny krok: etap 5 — powtórna budowa z publikacją ISO
 
-Etap 4 zapisany na main w commicie `6c1cb87152f16593a90cc74e1aa8ed2284b6f48a`.
-Walidacja GitHub Actions zaliczona: źródła, testy oraz przygotowanie profilu
-na zainstalowanym pakiecie Archiso w oficjalnym kontenerze Arch Linux.
-Następnie etap 5: ręczna budowa ISO konkretnego commita.
+Pierwsza budowa ISO (run 37809364706, commit `ffd453d`) zakończyła się
+pomyślną kompilacją obrazu, ale wysyłka artefaktu została odrzucona:
+prywatne repozytorium na darmowym planie ma limit 500 MB miejsca na
+artefakty, a ISO ma ok. 1,6 GB. Zgodnie z decyzją użytkownika ISO będzie
+publikowane jako wydanie w publicznym repozytorium
+`stainleSSStar/RAVNUX-releases` z użyciem sekretu `RELEASE_TOKEN`.
+Testy VM w tej samej kompilacji nie przeszły: QEMU w trybie BIOS
+zakończył się natychmiast po starcie (`bios: QEMU failed to start`);
+stderr QEMU trafi do `out/vm-bios-qemu.log` i zostanie dołączony
+do wydania. Następnie: powtórna budowa z publikacją, analiza logów VM
+i poprawka etapów 6a/6b.
 
 ## Odzyskane zmiany i ich stan
 
@@ -123,3 +130,19 @@ Następnie etap 5: ręczna budowa ISO konkretnego commita.
   Job validate zakończony sukcesem, wszystkie jego kroki zaliczone.
   Job iso pominięty zgodnie z ręcznym trybem budowania; etap 4 nie buduje ISO.
   Etap 5 nie został rozpoczęty.
+
+- Etap 5 (w toku): pierwszą budowę ISO wykonano 2026-10-08 ręcznym
+  uruchomieniem workflow (run 37809364706) na commicie `ffd453d`
+  z opcjami `build_iso=true` i `vm_tests=true`. Walidacja zaliczona (35 s).
+  ISO zbudowane pomyślnie: `ravnux-2026.10.04-x86_64.iso`, 1,6 GB
+  (SOURCE_DATE_EPOCH z daty commita). Wysyłka artefaktu Actions odrzucona:
+  limit miejsca artefaktów na darmowym planie (500 MB) nie mieści obrazu.
+  Test VM BIOS nie wystartował: QEMU zakończył się natychmiast
+  (`bios: QEMU failed to start`); diagnostyka wymaga `out/vm-bios-qemu.log`,
+  który nie został dostarczony z powodu braku artefaktu.
+  Zmiany po tej budowie: workflow publikuje ISO jako wydanie w publicznym
+  repozytorium `stainleSSStar/RAVNUX-releases` (sekret `RELEASE_TOKEN`),
+  krok testów VM jest nieblokujący, logi budowy/VM są dołączane do wydania,
+  wydanie bez zaliczonych testów VM jest oznaczane jako prerelease,
+  a limit czasu VM podniesiono do 1800 s na wypadek powolnego TCG.
+  README zaktualizowany o sposób pobrania ISO z repozytorium wydań.

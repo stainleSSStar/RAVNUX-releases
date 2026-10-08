@@ -20,7 +20,9 @@ To Arch rolling release korzystający z repozytoriów **core/extra** i dodatkowe
 
 ## Pobranie ISO z GitHub
 
-Otwórz **Actions → Build RAVNUX ISO → Run workflow** i zaznacz `build_iso`. Push i pull request uruchamiają walidację źródeł oraz przygotowanie profilu; pełna budowa ISO wymaga ręcznego uruchomienia. Opcja `vm_tests` dodatkowo uruchamia testy rozruchu BIOS i UEFI. Po udanej budowie pobierz artefakt `RAVNUX-x86_64-…`: ISO, `SHA256SUMS`, listy pakietów i logi. Logi są zachowywane również po błędzie. Artefakty są przechowywane przez 14 dni. W prywatnym repozytorium pobieranie wymaga zalogowania, a kompilacje mogą zużywać limit GitHub Actions.
+Otwórz **Actions → Build RAVNUX ISO → Run workflow** i zaznacz `build_iso`. Push i pull request uruchamiają walidację źródeł oraz przygotowanie profilu; pełna budowa ISO wymaga ręcznego uruchomienia. Opcja `vm_tests` dodatkowo uruchamia testy rozruchu BIOS i UEFI; wydanie oznaczone jako wstępne (prerelease) oznacza, że testy VM nie przeszły lub nie zostały uruchomione.
+
+Po udanej budowie ISO wraz z sumą `SHA256SUMS`, listami pakietów i logami budowy/VM jest publikowane jako wydanie w publicznym repozytorium wydań: **https://github.com/stainleSSStar/RAVNUX-releases/releases**. Publikacja używa sekretu `RELEASE_TOKEN` i działa również wtedy, gdy testy VM nie przeszły — wtedy dołączone logi wskazują przyczynę. Artefakty Actions w prywatnym repozytorium źródłowym pozostają ograniczone limitem darmowego planu (500 MB), dlatego ISO (ok. 1,6 GB) nie może być artefaktem i jest dostarczane wyłącznie przez repozytorium wydań.
 
 ISO obsługuje UEFI x86_64 oraz BIOS. Secure Boot nie jest skonfigurowany. Obraz jest dla zwykłych komputerów x86_64, nie dla Apple Silicon.
 
@@ -117,7 +119,7 @@ Firmware i sterowniki otwarte pokrywają wiele urządzeń, ale nie wszystkie. Ko
 - `scripts/build.sh` — składanie profilu i kompilacja ISO przez Archiso.
 - `scripts/install.sh` — instalacja na zamontowany root.
 - `scripts/vm-smoke.py` — test sesji live w VM BIOS/UEFI.
-- `.github/workflows/iso.yml` — walidacja CI, ręczna budowa ISO i opcjonalne testy VM.
+- `.github/workflows/iso.yml` — walidacja CI, ręczna budowa ISO, opcjonalne testy VM i publikacja wydania w repozytorium wydań.
 
 Kod i oryginalne grafiki motywu: MIT. Pakiety Arch i szablony Archiso zachowują własne licencje. Projekt nie jest oficjalnym wydaniem Arch Linux.
 
