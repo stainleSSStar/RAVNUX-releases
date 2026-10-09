@@ -34,7 +34,7 @@ SERIAL_SETUP = '''arch-chroot /mnt /bin/bash -c "echo 'GRUB_CMDLINE_LINUX_DEFAUL
 POWER_OFF = '''sync; umount /mnt || { echo 'umount /mnt failed; holders:'; grep ' /mnt' /proc/self/mountinfo || true; for fd in /proc/[0-9]*/fd/*; do readlink "$fd" 2>/dev/null; done | grep '^/mnt' | sort -u || true; umount -l /mnt; }; printf '\\nUMOUNTED\\n'; poweroff
 '''
 # Single-quoted for Fish: the whole payload must reach bash -c unexpanded.
-VERIFY = '''bash -c 'trap "printf \\"\\nRAVNUX_VM_FAIL\\n\\"" ERR; set -e; grep -qx {hostname} /etc/hostname; for i in $(seq 1 120); do if systemctl is-active lightdm 2>/dev/null | grep -qx active; then break; fi; sleep 1; done; systemctl is-active NetworkManager lightdm; test -x /usr/local/bin/ravnux-install; test -s /usr/share/pixmaps/ravnux-logo.png; printf "\\nRAVNUX_INSTALL_OK\\n"'
+VERIFY = '''bash -c 'trap "printf \\"\\nRAVNUX_VM_FAIL\\n\\"" ERR; set -e; grep -qx {hostname} /etc/hostname; for i in $(seq 1 120); do if systemctl is-active lightdm 2>/dev/null | grep -qx active; then break; fi; sleep 1; done; systemctl is-active NetworkManager lightdm; test -s /usr/share/pixmaps/ravnux-logo.png; test -s /usr/share/ravnux/guide-pl.md; printf "\\nRAVNUX_INSTALL_OK\\n"'
 '''.format(hostname=HOSTNAME)
 
 
