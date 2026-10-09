@@ -105,6 +105,9 @@ def boot(iso, mode, out, timeout=600, allow_kvm=True):
                 # login starts Fish; wait for its prompt before injecting the check.
                 console.expect('❯ '.encode())
                 connection.sendall(b'exec sudo bash --noprofile --norc +i\n')
+                # sudo flushes pending tty input while starting the root session,
+                # so the probe must only be sent after the root shell prompt shows.
+                console.expect(b'# ')
                 connection.sendall(b"stty -echo; printf '\\nRAVNUX_CHECK_READY\\n'\n")
                 console.expect(b'\r\nRAVNUX_CHECK_READY\r\n')
                 # No encoded payload; echo is disabled so source cannot count as a result.
