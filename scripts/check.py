@@ -2,6 +2,7 @@
 """Validate source structure; optionally also validate the assembled Archiso profile."""
 from pathlib import Path
 import configparser
+import os
 import re
 import subprocess
 import xml.etree.ElementTree as ET
@@ -29,6 +30,14 @@ assert {'fish', 'pipewire-pulse', 'wireplumber', 'linux-firmware', 'sof-firmware
 assert not (root / 'overlay/common/etc/sudoers.d/10-ravnux-live').exists()
 assert not (root / 'overlay/common/etc/lightdm/lightdm.conf.d/50-ravnux-live.conf').exists()
 assert not (root / 'overlay/common/etc/passwd').exists()
+# mkarchiso marks every live image as first boot (uninitialized machine-id);
+# the wizard would otherwise block the serial console and tty1 with prompts.
+firstboot_mask = root / 'overlay/live/etc/systemd/system/systemd-firstboot.service'
+assert firstboot_mask.is_symlink() and os.readlink(firstboot_mask) == '/dev/null', \
+    'Live image must mask systemd-firstboot.service'
+localtime = root / 'overlay/common/etc/localtime'
+assert localtime.is_symlink() and os.readlink(localtime).startswith('/usr/share/zoneinfo/'), \
+    'Live image needs a timezone symlink'
 assert 'nbd' in live, 'Archiso PXE NBD hook requires nbd-client'
 # Installer must validate arguments and mount before invoking pacstrap.
 script = (root / 'scripts/install.sh').read_text()
@@ -64,6 +73,12 @@ if profile.exists():
     serial = profile / 'airootfs/etc/systemd/system/serial-getty@ttyS0.service.d/10-live-setup.conf'
     assert 'After=ravnux-live-setup.service' in serial.read_text()
     assert 'Requires=ravnux-live-setup.service' in serial.read_text()
+    firstboot = profile / 'airootfs/etc/systemd/system/systemd-firstboot.service'
+    assert firstboot.is_symlink() and os.readlink(firstboot) == '/dev/null', \
+        'Prepared profile must keep the firstboot mask a symlink'
+    for prefix in ('airootfs', 'airootfs/usr/share/ravnux/root-overlay'):
+        link = profile / prefix / 'etc/localtime'
+        assert link.is_symlink() and os.readlink(link) == os.readlink(localtime), prefix
     for directory in ('syslinux', 'efiboot', 'grub'):
         for path in (profile / directory).rglob('*'):
             if path.suffix in ('.cfg', '.conf'):

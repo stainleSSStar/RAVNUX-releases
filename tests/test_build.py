@@ -14,7 +14,7 @@ class BuildPreparation(unittest.TestCase):
         self.addCleanup(self.tmp.cleanup)
         self.directory = Path(self.tmp.name)
         self.repo = self.directory / 'repo'
-        shutil.copytree(ROOT, self.repo, ignore=shutil.ignore_patterns(
+        shutil.copytree(ROOT, self.repo, symlinks=True, ignore=shutil.ignore_patterns(
             'profile', 'out', 'work', '__pycache__', '.git'))
         self.releng = self.directory / 'releng'
         fixtures = {
@@ -48,6 +48,13 @@ class BuildPreparation(unittest.TestCase):
             self.assertIn('console=tty0 console=ttyS0,115200', text)
             self.assertNotIn('LABEL speech', text)
         self.assertFalse((profile / 'efiboot/loader/entries/02-speech-linux.conf').exists())
+        firstboot = profile / 'airootfs/etc/systemd/system/systemd-firstboot.service'
+        self.assertTrue(firstboot.is_symlink())
+        self.assertEqual(os.readlink(firstboot), '/dev/null')
+        for prefix in ('airootfs', 'airootfs/usr/share/ravnux/root-overlay'):
+            localtime = profile / prefix / 'etc/localtime'
+            self.assertTrue(localtime.is_symlink(), prefix)
+            self.assertEqual(os.readlink(localtime), '/usr/share/zoneinfo/Europe/Warsaw')
         source = self.repo / 'overlay/common/usr/share/pixmaps/ravnux-logo.png'
         for prefix in ('airootfs', 'airootfs/usr/share/ravnux/root-overlay'):
             self.assertEqual(source.read_bytes(), (profile / prefix / 'usr/share/pixmaps/ravnux-logo.png').read_bytes())
