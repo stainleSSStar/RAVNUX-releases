@@ -32,15 +32,16 @@ Pełne zbudowanie i rozruch finalnego ISO nie są jeszcze potwierdzone.
 | 5 | Budowa ISO | Udany build konkretnego commita, zapis przebiegu i artefaktu | Gotowe; ISO na wydaniu v2026.10.08-r14 |
 | 6a | Rozruch BIOS | Test VM i zapis wyniku | Gotowe; PASS w run 34 |
 | 6b | Rozruch UEFI | Test VM i zapis wyniku | Gotowe; PASS w run 34 |
-| 6c | Instalacja | Instalacja na pustym dysku VM i start z dysku | Oczekuje |
+| 6c | Instalacja | Instalacja na pustym dysku VM i start z dysku | Gotowe dla BIOS (run 44); instalacja UEFI nieprzetestowana |
 | 7 | Instrukcja i wydanie | Przewodnik zgodny z przetestowanym ISO, suma kontrolna i publikacja | Oczekuje |
 
-## Następny krok: etap 6c — instalacja na pustym dysku VM
+## Następny krok: etap 7 — instrukcja i wydanie
 
-Etapy 6a/6b zakończone: ISO buduje się, startuje w BIOS i UEFI i przechodzi
-pełny test dymny (wydanie `v2026.10.09-r34`, VM boot tests passed). Następnie:
-instalacja na pustym dysku VM i start z dysku (6c), potem etap 7 (instrukcja
-zgodna z przetestowanym ISO, suma kontrolna, publikacja).
+Etap 6c zakończony dla BIOS: instalacja na pustym dysku VM, start z dysku
+i weryfikacja zalogowanego użytkownika przechodzą w CI (wydanie
+`v2026.10.09-r44` oznaczone latest, VM boot tests passed, Install test
+passed). Opcjonalnie: wariant instalacji UEFI. Następnie etap 7:
+przewodnik zgodny z przetestowanym ISO, suma kontrolna, publikacja.
 
 ## Odzyskane zmiany i ich stan
 
@@ -245,3 +246,43 @@ zgodna z przetestowanym ISO, suma kontrolna, publikacja).
   pomijają testy wymagające roota/x86_64 (8 niepowodzeń środowiskowych);
   pełny pakiet 31 testów przechodzi na CI validate dla każdego commita.
   Nie przetestowano: instalacji na dysku (6c), sprzętu fizycznego.
+
+- Etap 6c (BIOS): dodano `scripts/vm-install.py` — test instalacji w VM w CI:
+  ISO startuje z pustym dyskiem 16 GB (MS-DOS + ext4, zgodnie z kontraktem
+  instalatora), instalacja jest prowadzona przez konsolę szeregową
+  (potwierdzenie INSTALL, hasło użytkownika), po czym system startuje
+  z dysku i weryfikuje: hostname, NetworkManager, LightDM, logo i przewodnik
+  na zalogowanym systemie. Na zainstalowanym systemie test włącza konsolę
+  szeregową (argumenty kernela + serial-getty@ttyS0) wyłącznie na potrzeby
+  weryfikacji bez monitora. Workflow: opcja `install_test`; krok zwalnia
+  katalog roboczy archiso dla miejsca na dysku; wydanie jest oznaczane
+  latest tylko, gdy test instalacji też przechodzi. Testy: 37/37 na CI
+  validate (x86_64, root) dla każdego commita; lokalnie na ARM macOS
+  8 testów środowiskowych pomija kontrolę root/x86_64.
+
+  Budowy i naprawione wady (każda wykryta przez test CI, realna dla
+  użytkowników):
+  - build 36: instalator przerywał po pacstrap z „Unexpected Xorg server
+    in target" — `pacman -Q xorg-server` rozwiązuje provides (xlibre-xserver
+    provides xorg-server). Poprawka: porównanie nazw z `pacman -Qq`
+    (commit `5725773`), asercja w check.py.
+  - build 38: `umount /mnt` z „target is busy" — procesy gnupg docelowego
+    keyringu trzymają pliki pod celem. Poprawka: `gpgconf --kill all`
+    dla docelowego keyringa przed końcem instalatora (commit `0b0047f`);
+    test ma awaryjną diagnostykę i leniwe odmontowanie.
+  - build 40: weryfikacja końcowa padała na `hostname: command not found` —
+    Arch wydzielił pakiet hostname, base go nie ciągnie. Poprawka: asercja
+    zawartości `/etc/hostname` (commit `96b7862`).
+  - build 42: sprawdzanie `/usr/local/bin/ravnux-install` na zainstalowanym
+    systemie — to binarium istnieje tylko w overlay live. Poprawka:
+    weryfikacja zasobów root-overlay (logo, przewodnik) (commit `47a2780`).
+
+  Budowa 44 (run 37973584831, commit `47a2780`): instalacja BIOS na pusty
+  dysk PASS; start z dysku PASS; VM-TESTS i VM-INSTALL-TESTS w załącznikach
+  wydania `v2026.10.09-r44` (latest). Etap 6c uznany za ukończony dla BIOS.
+  Ograniczenia: instalacja UEFI (przenośny fallback --removable --no-nvram),
+  szyfrowanie, dual boot i sprzęt fizyczny pozostają nieprzetestowane;
+  kreator systemd-firstboot na pierwszym rozruchu zainstalowanego systemu
+  nie pojawił się (ustawienia hostname/locale/localtime są zdefiniowane),
+  ale /etc/vconsole.conf nie istnieje — warto obserwować przy testach
+  sprzętowych.

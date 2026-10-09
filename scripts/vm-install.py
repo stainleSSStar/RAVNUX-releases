@@ -159,7 +159,7 @@ def main():
     install(args.iso.resolve(), args.output, args.timeout)
     report.write_text(
         f'PASS: BIOS install onto a blank disk; boot from disk; login as {USERNAME}; '
-        'NetworkManager and LightDM active; installer and logo present.\n'
+        'NetworkManager and LightDM active; hostname set; bundled logo and guide present.\n'
         'Test instrumentation: serial console kernel arguments and serial-getty@ttyS0 '
         'were enabled on the installed system after installation, for headless verification only.\n'
         'Not covered: UEFI install, physical hardware, encryption/LVM, dual boot.\n')
