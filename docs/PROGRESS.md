@@ -1,6 +1,6 @@
 # RAVNUX — postęp prac
 
-Aktualizacja: 2026-10-08.
+Aktualizacja: 2026-10-09.
 
 ## Zasady kontynuacji
 
@@ -30,19 +30,17 @@ Pełne zbudowanie i rozruch finalnego ISO nie są jeszcze potwierdzone.
 | 3 | Ozdobne logo R ze złotymi wzorami | Porównanie odzyskanej grafiki z GitHubem, kontrola integracji, zapis | Gotowe |
 | 4 | Budowanie i CI | Przegląd nbd, testu VM, konsoli szeregowej i workflow, zapis | Gotowe; CI zaliczone |
 | 5 | Budowa ISO | Udany build konkretnego commita, zapis przebiegu i artefaktu | Gotowe; ISO na wydaniu v2026.10.08-r14 |
-| 6a | Rozruch BIOS | Test VM i zapis wyniku | Oczekuje |
-| 6b | Rozruch UEFI | Test VM i zapis wyniku | Oczekuje |
+| 6a | Rozruch BIOS | Test VM i zapis wyniku | Gotowe; PASS w run 34 |
+| 6b | Rozruch UEFI | Test VM i zapis wyniku | Gotowe; PASS w run 34 |
 | 6c | Instalacja | Instalacja na pustym dysku VM i start z dysku | Oczekuje |
 | 7 | Instrukcja i wydanie | Przewodnik zgodny z przetestowanym ISO, suma kontrolna i publikacja | Oczekuje |
 
-## Następny krok: etapy 6a/6b — testy rozruchu VM w TCG
+## Następny krok: etap 6c — instalacja na pustym dysku VM
 
-ISO jest budowane i publikowane (etap 5 zakończony, wydania `v2026.10.08-r14`
-i `v2026.10.08-r15`). Jądro gościa zawiesza się na hoście CI po ok. 0,2 s
-w zagnieżdżonym KVM; workflow CI testuje teraz w TCG (`--no-kvm`), lokalnie
-KVM pozostaje domyślne. Następnie: powtórna budowa z `vm_tests=true`,
-weryfikacja rozruchu BIOS i UEFI, potem etap 6c (instalacja na dysku VM)
-i etap 7 (instrukcja zgodna z przetestowanym ISO, suma kontrolna, publikacja).
+Etapy 6a/6b zakończone: ISO buduje się, startuje w BIOS i UEFI i przechodzi
+pełny test dymny (wydanie `v2026.10.09-r34`, VM boot tests passed). Następnie:
+instalacja na pustym dysku VM i start z dysku (6c), potem etap 7 (instrukcja
+zgodna z przetestowanym ISO, suma kontrolna, publikacja).
 
 ## Odzyskane zmiany i ich stan
 
@@ -202,3 +200,48 @@ i etap 7 (instrukcja zgodna z przetestowanym ISO, suma kontrolna, publikacja).
   konsol zmieniona na `console=tty0 console=ttyS0,115200` — /dev/console
   to ttyS0, dzięki czemu test VM widzi pełny rozruch i login; asercja w
   `scripts/check.py` zaktualizowana do nowej kolejności.
+
+- Siódma budowa (build 25, commit `5bed865`): ISO zbudowane, ale test VM BIOS
+  nadal bez `login:`. Log szeregowy ujawnił przyczynę: `systemd-firstboot`
+  ("Initial Setup") blokował konsolę pytaniem o strefę czasową. mkarchiso
+  zapisuje `/etc/machine-id` jako `uninitialized`, więc każdy rozruch live
+  spełnia `ConditionFirstBoot=yes`; upstream releng unika promptów, bo
+  predefiniuje wszystkie ustawienia (/etc/localtime, locale.conf itd.).
+  Poprawka (commit `a61ed10`): maska `systemd-firstboot.service` (dowiązanie
+  do /dev/null) w overlay live oraz `/etc/localtime` → Europe/Warsaw
+  (domyślna strefa instalatora) w overlay common; `scripts/check.py`
+  asercje maski i dowiązania, test budowania kopiuje repozytorium
+  z zachowaniem dowiązań symbolicznych (wcześniej `copytree` je rozwijał,
+  co zamieniłoby maskę w zwykły pusty plik). Przed poprawką anulowano zbędny
+  dispatch run 37948529642. Walidacja CI dla `a61ed10`: zaliczona.
+
+- Ósma budowa (build 28, commit `a61ed10`): postęp — `login:` pojawia się,
+  login szeregowy działa, `exec sudo bash` osiąga prompt roota; ale sonda
+  gotowości wysłana natychmiast po `exec` zniknęła: sudo czyści kolejkę
+  wejścia TTY przy tworzeniu sesji celu. Poprawka (commit `0dd392a`):
+  vm-smoke czeka na prompt roota (`# `) przed wysłaniem sondy.
+
+- Dziewiąta budowa (build 30, commit `0dd392a`): skrypt gościa uruchamia się,
+  sesja XFCE/XLibre wstaje, ale fałszywy alarm "Unexpected package: xorg-server".
+  Przyczyna: `pacman -Q` rozwiązuje również provides (query.c spada do
+  `alpm_find_satisfier`), a `xlibre-xserver` provides `xorg-server`.
+  Poprawka (commit `22e37cf`): porównanie z listą nazw z `pacman -Qq`;
+  mock testu podaje listę zainstalowanych dla `-Qq`.
+
+- Dziesiąta budowa (build 32, commit `22e37cf`): wszystkie kontrole gościa
+  przechodzą (pakiety, usługi, zasoby, xdpyinfo), ale końcowy `printf
+  RAVNUX_VM_OK` w kolejce wejścia za `sudo -u ravnux ... xdpyinfo` został
+  wyczyszczony przez ten sam mechanizm sudo. Poprawka (commit `a31849c`):
+  znacznik końcowy w tej samej linii co sudo (bash odczytuje całą linię
+  przed wykonaniem); porażka xdpyinfo trafia do pułapki ERR przez `false`
+  (łańcuch `&&` nie uruchamia set -e).
+
+- Jedenasta budowa (build 34, commit `a31849c`): BIOS i UEFI PASS.
+  VM-TESTS.txt: rozruch ISO, sesja XFCE, Xlibre, NetworkManager/LightDM/
+  Bluetooth, logo, tapeta, instalator. Wydanie `v2026.10.09-r34`
+  opublikowane jako latest (nie prerelease), z pełnymi logami BIOS/UEFI.
+  Etapy 6a/6b uznane za ukończone.
+  Ograniczenia: testy walidacyjne uruchamiane lokalnie na hoście ARM macOS
+  pomijają testy wymagające roota/x86_64 (8 niepowodzeń środowiskowych);
+  pełny pakiet 31 testów przechodzi na CI validate dla każdego commita.
+  Nie przetestowano: instalacji na dysku (6c), sprzętu fizycznego.
