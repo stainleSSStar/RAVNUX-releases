@@ -34,8 +34,10 @@ test -s /usr/share/pixmaps/ravnux-logo.png
 test -s /usr/share/backgrounds/ravnux/cyberpunk-city.jpg
 test -x /usr/local/bin/ravnux-install
 test -s /usr/share/ravnux/guide-pl.md
-sudo -u ravnux env DISPLAY=:0 XAUTHORITY=/home/ravnux/.Xauthority xdpyinfo >/dev/null
-printf '\\nRAVNUX_VM_OK\\n'
+# sudo flushes pending tty input when it sets up the target session, so nothing
+# may follow this line; keep the completion marker in the same line and fail via
+# the ERR trap if the display check fails.
+if sudo -u ravnux env DISPLAY=:0 XAUTHORITY=/home/ravnux/.Xauthority xdpyinfo >/dev/null; then printf '\\nRAVNUX_VM_OK\\n'; else false; fi
 '''
 
 
