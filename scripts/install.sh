@@ -124,4 +124,7 @@ else
 fi
 printf '\nGRUB_DISTRIBUTOR="RAVNUX"\n' >> "$target/etc/default/grub"
 arch-chroot "$target" grub-mkconfig -o /boot/grub/grub.cfg
+# gnupg daemons for the seeded target keyring keep files open below $target,
+# which would make it busy for a following umount; stop them before finishing.
+gpgconf --homedir "$target_keyring" --kill all || true
 printf '\nInstallation complete. Unmount %s, reboot and remove the ISO.\n' "$target"

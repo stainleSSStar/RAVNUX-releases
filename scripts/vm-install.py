@@ -31,7 +31,7 @@ INSTALL = f'''ravnux-install --target /mnt --hostname {HOSTNAME} --username {USE
 # Appending the variable again is safe: grub-mkconfig sources the file, last value wins.
 SERIAL_SETUP = '''arch-chroot /mnt /bin/bash -c "echo 'GRUB_CMDLINE_LINUX_DEFAULT=\\"loglevel=3 console=tty0 console=ttyS0,115200\\"' >> /etc/default/grub; grub-mkconfig -o /boot/grub/grub.cfg; systemctl enable serial-getty@ttyS0.service"; printf '\\nSERIAL_SETUP_DONE\\n'
 '''
-POWER_OFF = '''umount /mnt; printf '\\nUMOUNTED\\n'; poweroff
+POWER_OFF = '''sync; umount /mnt || { echo 'umount /mnt failed; holders:'; grep ' /mnt' /proc/self/mountinfo || true; for fd in /proc/[0-9]*/fd/*; do readlink "$fd" 2>/dev/null; done | grep '^/mnt' | sort -u || true; umount -l /mnt; }; printf '\\nUMOUNTED\\n'; poweroff
 '''
 # Single-quoted for Fish: the whole payload must reach bash -c unexpanded.
 VERIFY = '''bash -c 'trap "printf \\"\\nRAVNUX_VM_FAIL\\n\\"" ERR; set -e; hostname; for i in $(seq 1 120); do if systemctl is-active lightdm 2>/dev/null | grep -qx active; then break; fi; sleep 1; done; systemctl is-active NetworkManager lightdm; test -x /usr/local/bin/ravnux-install; test -s /usr/share/pixmaps/ravnux-logo.png; printf "\\nRAVNUX_INSTALL_OK\\n"'
