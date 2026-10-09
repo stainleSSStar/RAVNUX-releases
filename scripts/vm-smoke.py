@@ -20,8 +20,10 @@ pgrep -u ravnux -x xfce4-session
 test -S /tmp/.X11-unix/X0
 pgrep -x Xorg || pgrep -x Xlibre
 pacman -Q xlibre-xserver xlibre-input-libinput fish pipewire wireplumber
+# pacman -Q also resolves provisions, so compare installed names, not providers.
+installed="$(pacman -Qq)"
 for package in xorg-server xf86-input-libinput; do
- if pacman -Q "$package" >/dev/null 2>&1; then
+ if printf '%s\\n' "$installed" | grep -Fx "$package" >/dev/null; then
   printf 'Unexpected package: %s\\n' "$package" >&2
   false
  fi

@@ -53,13 +53,22 @@ class GuestChecks(unittest.TestCase):
             self.assertFalse(report.exists())
 
     def run_guest(self, unexpected='', service_status=0):
+        installed = ' xlibre-xserver xlibre-input-libinput fish pipewire wireplumber'
+        if unexpected:
+            installed += ' ' + unexpected
         mocks = '''pgrep() { return 0; }
 test() { return 0; }
 sleep() { return 0; }
 sudo() { return 0; }
-pacman() { case "$2" in xorg-server|xf86-input-libinput) [[ "$2" == "%s" ]];; *) return 0;; esac; }
+pacman() {
+ if [[ $1 == -Qq ]]; then
+  printf '%%s\\n'%s
+  return 0
+ fi
+ return 0
+}
 systemctl() { return %s; }
-''' % (unexpected, service_status)
+''' % (installed, service_status)
         return subprocess.run(['bash', '-c', mocks + vm.GUEST_SCRIPT], capture_output=True, text=True)
 
     def test_success_marker_only_after_checks_pass(self):
