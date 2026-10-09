@@ -103,7 +103,10 @@ pacman-key --init
 pacman-key --populate archlinux
 ravnux-keyring-init
 pacman -Q xlibre-xserver xlibre-input-libinput
-if pacman -Q xorg-server &>/dev/null; then
+# pacman -Q also resolves provisions, and xlibre-xserver provides xorg-server;
+# compare installed package names instead of querying the virtual package.
+installed="$(pacman -Qq)"
+if printf '%s\n' "$installed" | grep -Fx xorg-server >/dev/null; then
  echo "Unexpected Xorg server in target." >&2
  exit 1
 fi

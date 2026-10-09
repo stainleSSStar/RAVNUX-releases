@@ -44,6 +44,10 @@ script = (root / 'scripts/install.sh').read_text()
 assert script.index('mountpoint -q') < script.index('pacstrap -C')
 assert script.index('confirmation == INSTALL') < script.index('pacstrap -C')
 assert not re.search(r'\b(mkfs|wipefs|sgdisk)\b', script)
+# 'pacman -Q xorg-server' would succeed whenever xlibre-xserver (which provides
+# xorg-server) is installed; the installer must compare installed names instead.
+assert 'pacman -Qq' in script, 'Installer must check installed names, not provisions'
+assert 'pacman -Q xorg-server' not in script, 'Installer queries xorg-server as a provision'
 artwork = {
     'usr/share/pixmaps/ravnux-logo.png': b'\x89PNG\r\n\x1a\n',
     'usr/share/backgrounds/ravnux/cyberpunk-city.jpg': b'\xff\xd8\xff',
