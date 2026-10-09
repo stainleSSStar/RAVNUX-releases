@@ -20,7 +20,7 @@ To Arch rolling release korzystający z repozytoriów **core/extra** i dodatkowe
 
 ## Pobranie ISO z GitHub
 
-Otwórz **Actions → Build RAVNUX ISO → Run workflow** i zaznacz `build_iso`. Push i pull request uruchamiają walidację źródeł oraz przygotowanie profilu; pełna budowa ISO wymaga ręcznego uruchomienia. Opcja `vm_tests` dodatkowo uruchamia testy rozruchu BIOS i UEFI; wydanie oznaczone jako wstępne (prerelease) oznacza, że testy VM nie przeszły lub nie zostały uruchomione.
+Otwórz **Actions → Build RAVNUX ISO → Run workflow** i zaznacz `build_iso`. Push i pull request uruchamiają walidację źródeł oraz przygotowanie profilu; pełna budowa ISO wymaga ręcznego uruchomienia. Opcja `vm_tests` dodatkowo uruchamia testy rozruchu BIOS i UEFI, a opcja `install_test` — instalację na pustym dysku BIOS i start z tego dysku; wydanie oznaczone jako wstępne (prerelease) oznacza, że któryś z tych testów nie przeszedł lub nie został uruchomiony.
 
 Po udanej budowie ISO wraz z sumą `SHA256SUMS`, listami pakietów i logami budowy/VM jest publikowane jako wydanie w publicznym repozytorium wydań: **https://github.com/stainleSSStar/RAVNUX-releases/releases**. Publikacja używa sekretu `RELEASE_TOKEN` i działa również wtedy, gdy testy VM nie przeszły — wtedy dołączone logi wskazują przyczynę. Artefakty Actions w prywatnym repozytorium źródłowym pozostają ograniczone limitem darmowego planu (500 MB), dlatego ISO (ok. 1,6 GB) nie może być artefaktem i jest dostarczane wyłącznie przez repozytorium wydań.
 
@@ -97,6 +97,14 @@ python3 scripts/vm-smoke.py out/*.iso
 
 Domyślnie testowane są BIOS i UEFI; `--mode bios` lub `--mode uefi` wybiera jeden tryb. Na hostach, gdzie KVM zawiesza gościa (spotykane na runnerach CI), użyj `--no-kvm`, aby wymusić TCG. Skrypt zapisuje logi konsoli/QEMU oraz raport `out/VM-TESTS.txt` dopiero po sukcesie wszystkich wybranych testów. Weryfikuje XFCE/XLibre, usługi, grafiki i instalator w sesji live. Nie przeprowadza instalacji na dysku.
 
+Do testu instalacji na Linuxie z pakietem `qemu-system-x86` (wymaga roota w QEMU przez KVM; test działa też w CI):
+
+```sh
+python3 scripts/vm-install.py out/*.iso
+```
+
+Skrypt uruchamia ISO w VM z pustym dyskiem 16 GB, partycjonuje go (MS-DOS + ext4), przeprowadza instalację instalatorem `ravnux-install` z potwierdzeniem `INSTALL` i hasłem ustawianym przez konsolę szeregową, po czym startuje system z dysku i loguje się jako utworzony użytkownik. Na zainstalowanym systemie włącza konsolę szeregową (kernel i `serial-getty@ttyS0`) wyłącznie na potrzeby weryfikacji bez monitora; zapisuje logi `out/vm-install-*.log` oraz raport `out/VM-INSTALL-TESTS.txt` tylko po sukcesie. Test obejmuje wyłącznie instalację BIOS; instalacja UEFI, szyfrowanie i dual boot nie są testowane.
+
 Przed uznaniem obrazu za gotowy sprawdź:
 
 1. Start UEFI i BIOS w maszynie wirtualnej; później na rzeczywistym sprzęcie.
@@ -119,7 +127,8 @@ Firmware i sterowniki otwarte pokrywają wiele urządzeń, ale nie wszystkie. Ko
 - `scripts/build.sh` — składanie profilu i kompilacja ISO przez Archiso.
 - `scripts/install.sh` — instalacja na zamontowany root.
 - `scripts/vm-smoke.py` — test sesji live w VM BIOS/UEFI.
-- `.github/workflows/iso.yml` — walidacja CI, ręczna budowa ISO, opcjonalne testy VM i publikacja wydania w repozytorium wydań.
+- `scripts/vm-install.py` — test instalacji na pustym dysku VM i startu z dysku.
+- `.github/workflows/iso.yml` — walidacja CI, ręczna budowa ISO, opcjonalne testy VM/instalacji i publikacja wydania w repozytorium wydań.
 
 Kod i oryginalne grafiki motywu: MIT. Pakiety Arch i szablony Archiso zachowują własne licencje. Projekt nie jest oficjalnym wydaniem Arch Linux.
 
