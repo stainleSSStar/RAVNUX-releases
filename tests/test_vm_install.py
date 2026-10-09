@@ -35,7 +35,8 @@ class VerificationCommand(unittest.TestCase):
         mocks = '''test() { return 0; }
 sleep() { return 0; }
 systemctl() { if [[ $1 == is-active ]]; then echo %s; return %s; fi; return 0; }
-export -f test sleep systemctl
+grep() { case "$*" in *ravnux-vm*) return 0;; esac; command grep "$@"; }
+export -f test sleep systemctl grep
 ''' % ('active' if service_status == 0 else 'activating', service_status)
         return subprocess.run(['bash', '-c', mocks + vmi.VERIFY], capture_output=True, text=True)
 
