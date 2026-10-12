@@ -275,7 +275,7 @@ if getent passwd ravnux; then echo 'BŁĄD: konto live zostało w systemie'; els
 if test -e /etc/sudoers.d/10-ravnux-live; then echo 'BŁĄD: sudo live zostało w systemie'; else echo 'OK: brak sudo live'; fi
 ```
 
-Powtórz test dźwięku/mikrofonu i ręczne testy pulpitu. `lspci`, `lsusb`, `xdpyinfo` i `xrandr` są dodatkowymi narzędziami ISO; nie muszą być zainstalowane na dysku. `ravnux-guide` pozostaje dostępne także po instalacji.
+Powtórz test dźwięku/mikrofonu i ręczne testy pulpitu. `lspci`, `lsusb` i `xdpyinfo` są dodatkowymi narzędziami ISO; nie muszą być zainstalowane na dysku. `ravnux-guide` pozostaje dostępne także po instalacji.
 
 Na końcu zmień tapetę w ustawieniach, wyloguj się i zaloguj — własny wybór powinien pozostać. Wykonaj pełne wyłączenie i ponowne uruchomienie komputera.
 

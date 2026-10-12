@@ -15,4 +15,3 @@ efibootmgr
 pciutils
 usbutils
 xorg-xdpyinfo
-xorg-xrandr

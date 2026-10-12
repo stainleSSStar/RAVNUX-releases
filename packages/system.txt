@@ -50,3 +50,4 @@ nano
 less
 xdg-utils
 xdg-user-dirs
+xorg-xrandr
