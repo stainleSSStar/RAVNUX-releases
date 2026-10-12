@@ -98,6 +98,7 @@ mkdir -p out
 pacman -Q > out/build-host-packages.txt
 printf 'SOURCE_DATE_EPOCH=%s\n' "$SOURCE_DATE_EPOCH" > out/build-info.txt
 mkarchiso -v -w "$PWD/work" -o "$PWD/out" "$PWD/profile"
+cp docs/GUIDE_PL.md out/GUIDE_PL.md
 cp work/x86_64/airootfs/usr/share/ravnux/system-packages.txt out/requested-system-packages.txt
 cp work/iso/arch/pkglist.x86_64.txt out/live-packages.txt
 if grep -Eq '^xorg-server(-| )|^xf86-input-libinput ' out/live-packages.txt; then

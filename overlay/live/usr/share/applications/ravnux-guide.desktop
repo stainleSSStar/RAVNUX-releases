@@ -1,7 +1,9 @@
 [Desktop Entry]
 Type=Application
-Name=RAVNUX — test and installation guide
-Comment=Offline instructions for testing and installing RAVNUX
+Name=RAVNUX — user guide
+Name[pl]=RAVNUX — instrukcja użytkownika
+Comment=Installation, first steps and everyday use
+Comment[pl]=Instalacja, pierwsze kroki i codzienna obsługa
 Exec=ravnux-guide
 Icon=/usr/share/pixmaps/ravnux-logo.png
 Terminal=true

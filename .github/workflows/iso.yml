@@ -106,7 +106,7 @@ jobs:
           iso_version="$(date -u --date="@$(sed -n 's/^SOURCE_DATE_EPOCH=//p' out/build-info.txt)" +%Y.%m.%d)"
           tag="v${iso_version}-r${GITHUB_RUN_NUMBER}"
           notes="RAVNUX live/installer ISO built from commit ${GITHUB_SHA} (workflow run ${GITHUB_RUN_NUMBER}).
-          Release assets: ISO image, SHA256SUMS, package manifests, build/VM logs.
+          Release assets: ISO image, SHA256SUMS, user guide, package manifests, build/VM logs.
           VM boot tests: ${{ steps.vm.outcome == 'success' && 'passed (BIOS and UEFI)' || 'not passed or not run; see logs' }}.
           CLI install tests (BIOS and UEFI to blank disks): ${{ steps.install.outcome == 'success' && 'passed' || 'not passed or not run; see logs' }}."
           publish=(--prerelease)
@@ -116,7 +116,7 @@ jobs:
           if [[ $latest == true ]]; then
             publish=(--latest)
           fi
-          assets=(out/*.iso out/SHA256SUMS out/*.txt out/vm-*.log ci-logs/*.log)
+          assets=(out/*.iso out/SHA256SUMS out/*.txt out/*.md out/vm-*.log ci-logs/*.log)
           gh release create "$tag" --repo "$RELEASE_REPO" \
             --title "RAVNUX ${iso_version} (build ${GITHUB_RUN_NUMBER})" \
             --notes "$notes" \
