@@ -122,3 +122,27 @@ prepare_disk /dev/nvme0n1 %s
         result = subprocess.run(['bash', str(WIZARD), '--help'], text=True, capture_output=True)
         self.assertEqual(result.returncode, 0)
         self.assertIn('UEFI/BIOS', result.stdout)
+
+    def test_transient_unmount_failure_is_retried(self):
+        result = self.run_shell('''
+unmount_calls=0
+umount() { unmount_calls=$((unmount_calls + 1)); echo "UNMOUNT $*"; [[ $unmount_calls -ge 2 ]]; }
+sleep() { :; }
+unmount_target /test/ravnux
+''')
+        self.assertEqual(result.returncode, 0, result.stderr)
+        self.assertEqual(result.stdout.count('UNMOUNT -R /test/ravnux'), 2)
+
+    def test_persistent_unmount_failure_is_reported_without_force(self):
+        result = self.run_shell('''
+umount() { echo "UNMOUNT $*"; return 1; }
+sleep() { :; }
+findmnt() { return 0; }
+readlink() { return 1; }
+unmount_target /test/ravnux
+''')
+        self.assertNotEqual(result.returncode, 0)
+        self.assertIn('Cannot unmount', result.stderr)
+        self.assertEqual(result.stdout.count('UNMOUNT -R /test/ravnux'), 3)
+        self.assertNotIn('-l', result.stdout)
+        self.assertNotIn('-f', result.stdout)

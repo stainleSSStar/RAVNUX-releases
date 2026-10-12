@@ -117,6 +117,11 @@ visudo -cf /etc/sudoers
 systemctl enable NetworkManager.service bluetooth.service lightdm.service systemd-timesyncd.service
 systemctl set-default graphical.target
 mkinitcpio -P
+# Agents started inside this chroot use socket paths relative to /etc/pacman.d,
+# unlike the host's seeded keyring under /mnt. Stop them in their own context
+# before arch-chroot removes its temporary mounts, so they cannot pin the root.
+gpgconf --homedir /etc/pacman.d/gnupg --kill all
+gpgconf --kill all
 CHROOT
 arch-chroot "$target" passwd "$username"
 if [[ -z $bios_disk ]]; then

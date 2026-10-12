@@ -64,6 +64,28 @@ prepare_disk() {
   mount "$efi" "$target/boot/efi"
  fi
 }
+unmount_target() {
+ local target=$1 attempt process reference resolved
+ # GnuPG agents and package hooks may need a moment to release their handles.
+ # Never hide a persistent failure with lazy or forced unmounting.
+ for attempt in 1 2 3; do
+  if umount -R "$target"; then return 0; fi
+  [[ $attempt == 3 ]] || sleep 1
+ done
+ echo "Cannot unmount $target; remaining mounts and processes:" >&2
+ findmnt -R "$target" >&2 || true
+ for process in /proc/[0-9]*; do
+  for reference in "$process/root" "$process/cwd" "$process"/fd/*; do
+   resolved=$(readlink "$reference" 2>/dev/null) || continue
+   case "$resolved" in
+    "$target"|"$target"/*)
+     printf 'PID %s holds %s\n' "${process##*/}" "$resolved" >&2
+     break ;;
+   esac
+  done
+ done
+ return 1
+}
 main() {
  if [[ ${1:-} == --help || ${1:-} == -h ]]; then
   echo 'Usage: sudo ravnux-setup'
@@ -122,7 +144,7 @@ main() {
  [[ $mode != bios ]] || args+=(--bios-disk "$disk")
  # Backend retains its own INSTALL confirmation and interactive password prompt.
  ravnux-install "${args[@]}"
- umount -R /mnt
+ unmount_target /mnt
  trap - ERR
  echo 'Installation finished. Remove the live USB when restarting.'
  read -r -p 'Restart now? [y/N]: ' answer

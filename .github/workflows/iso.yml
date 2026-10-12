@@ -68,15 +68,13 @@ jobs:
       - name: Boot ISO in BIOS and UEFI virtual machines
         id: vm
         if: inputs.vm_tests && steps.build.outcome == 'success'
-        continue-on-error: true
         run: |
           sudo apt-get update
           sudo apt-get install -y qemu-system-x86 ovmf
           python3 scripts/vm-smoke.py --timeout 1800 out/*.iso 2>&1 | tee ci-logs/vm.log
       - name: Install to a blank disk and boot from it
         id: install
-        if: inputs.install_test && steps.build.outcome == 'success'
-        continue-on-error: true
+        if: always() && inputs.install_test && steps.build.outcome == 'success'
         run: |
           sudo apt-get update
           sudo apt-get install -y qemu-system-x86 ovmf
@@ -112,7 +110,7 @@ jobs:
           publish=(--prerelease)
           latest=true
           [[ '${{ inputs.vm_tests }}' == true && '${{ steps.vm.outcome }}' == success ]] || latest=false
-          [[ '${{ inputs.install_test }}' != true || '${{ steps.install.outcome }}' == success ]] || latest=false
+          [[ '${{ inputs.install_test }}' == true && '${{ steps.install.outcome }}' == success ]] || latest=false
           if [[ $latest == true ]]; then
             publish=(--latest)
           fi
