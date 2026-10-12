@@ -1,2 +1,0 @@
-#!/usr/bin/env bash
-exec less /usr/share/ravnux/guide-pl.md

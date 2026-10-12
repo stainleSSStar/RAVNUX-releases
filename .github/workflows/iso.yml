@@ -15,7 +15,7 @@ on:
         type: boolean
         default: false
       install_test:
-        description: Also install to a blank BIOS disk and boot from it (stage 6c)
+        description: Test CLI installation and disk boot in BIOS and UEFI
         type: boolean
         default: false
 permissions:
@@ -32,6 +32,10 @@ jobs:
     timeout-minutes: 20
     steps:
       - uses: actions/checkout@v4
+      - name: Install disk test tools
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y parted dosfstools
       - name: Validate source
         run: |
           python3 scripts/check.py
@@ -64,18 +68,16 @@ jobs:
       - name: Boot ISO in BIOS and UEFI virtual machines
         id: vm
         if: inputs.vm_tests && steps.build.outcome == 'success'
-        continue-on-error: true
         run: |
           sudo apt-get update
           sudo apt-get install -y qemu-system-x86 ovmf
           python3 scripts/vm-smoke.py --timeout 1800 out/*.iso 2>&1 | tee ci-logs/vm.log
       - name: Install to a blank disk and boot from it
         id: install
-        if: inputs.install_test && steps.build.outcome == 'success'
-        continue-on-error: true
+        if: always() && inputs.install_test && steps.build.outcome == 'success'
         run: |
           sudo apt-get update
-          sudo apt-get install -y qemu-system-x86
+          sudo apt-get install -y qemu-system-x86 ovmf
           # Free the space the airootfs work tree occupies; the disk image needs it.
           sudo rm -rf work
           python3 scripts/vm-install.py --timeout 3600 out/*.iso 2>&1 | tee ci-logs/vm-install.log
@@ -102,17 +104,17 @@ jobs:
           iso_version="$(date -u --date="@$(sed -n 's/^SOURCE_DATE_EPOCH=//p' out/build-info.txt)" +%Y.%m.%d)"
           tag="v${iso_version}-r${GITHUB_RUN_NUMBER}"
           notes="RAVNUX live/installer ISO built from commit ${GITHUB_SHA} (workflow run ${GITHUB_RUN_NUMBER}).
-          Release assets: ISO image, SHA256SUMS, package manifests, build/VM logs.
+          Release assets: ISO image, SHA256SUMS, user guide, package manifests, build/VM logs.
           VM boot tests: ${{ steps.vm.outcome == 'success' && 'passed (BIOS and UEFI)' || 'not passed or not run; see logs' }}.
-          Install test (BIOS to blank disk): ${{ steps.install.outcome == 'success' && 'passed' || 'not passed or not run; see logs' }}."
+          CLI install tests (BIOS and UEFI to blank disks): ${{ steps.install.outcome == 'success' && 'passed' || 'not passed or not run; see logs' }}."
           publish=(--prerelease)
           latest=true
           [[ '${{ inputs.vm_tests }}' == true && '${{ steps.vm.outcome }}' == success ]] || latest=false
-          [[ '${{ inputs.install_test }}' != true || '${{ steps.install.outcome }}' == success ]] || latest=false
+          [[ '${{ inputs.install_test }}' == true && '${{ steps.install.outcome }}' == success ]] || latest=false
           if [[ $latest == true ]]; then
             publish=(--latest)
           fi
-          assets=(out/*.iso out/SHA256SUMS out/*.txt out/vm-*.log ci-logs/*.log)
+          assets=(out/*.iso out/SHA256SUMS out/*.txt out/*.md out/vm-*.log ci-logs/*.log)
           gh release create "$tag" --repo "$RELEASE_REPO" \
             --title "RAVNUX ${iso_version} (build ${GITHUB_RUN_NUMBER})" \
             --notes "$notes" \

@@ -1,0 +1,10 @@
+[Desktop Entry]
+Type=Application
+Name=RAVNUX — user guide
+Name[pl]=RAVNUX — instrukcja użytkownika
+Comment=Installation, first steps and everyday use
+Comment[pl]=Instalacja, pierwsze kroki i codzienna obsługa
+Exec=ravnux-guide
+Icon=/usr/share/pixmaps/ravnux-logo.png
+Terminal=true
+Categories=System;Documentation;

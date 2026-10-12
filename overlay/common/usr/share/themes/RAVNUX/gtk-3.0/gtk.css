@@ -11,3 +11,15 @@ headerbar { background-image: none; background-color: #301b3e; }
 button:checked, selection, row:selected { background-image: none; background-color: #9d3ac2; color: #fff3fc; }
 *:focus { outline-color: #f472b6; }
 scale highlight, progressbar progress { background-image: none; background-color: #d65cc8; border-color: #d65cc8; }
+
+/* Quiet surfaces, pink focus accents and more breathing room. */
+headerbar { border-bottom: 1px solid #50305f; box-shadow: none; }
+button { border-radius: 6px; padding: 6px 10px; }
+button:hover { background-image: none; background-color: #452854; }
+entry { border-radius: 6px; border-color: #50305f; }
+entry:focus { border-color: #f472b6; box-shadow: inset 0 0 0 1px #f472b6; }
+menu { border: 1px solid #50305f; border-radius: 8px; padding: 6px; }
+menuitem { border-radius: 4px; padding: 6px 10px; }
+menuitem:hover { background-color: #633274; color: #fff3fc; }
+.xfce4-panel button { border-radius: 5px; margin: 3px; padding: 4px 8px; }
+.xfce4-panel button:checked { background-color: #633274; border-bottom: 2px solid #f472b6; }

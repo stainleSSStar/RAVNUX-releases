@@ -1,8 +1,0 @@
-[Desktop Entry]
-Type=Application
-Name=RAVNUX — test and installation guide
-Comment=Offline instructions for testing and installing RAVNUX
-Exec=ravnux-guide
-Icon=/usr/share/pixmaps/ravnux-logo.png
-Terminal=true
-Categories=System;Documentation;

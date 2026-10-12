@@ -5,10 +5,7 @@ intel-ucode
 amd-ucode
 sof-firmware
 alsa-ucm-conf
-alsa-utils
 mesa
-vulkan-intel
-vulkan-radeon
 xlibre-xserver
 xlibre-input-libinput
 xfce4-session
@@ -46,7 +43,6 @@ gvfs
 udisks2
 fish
 sudo
-nano
-less
 xdg-utils
 xdg-user-dirs
+xorg-xrandr

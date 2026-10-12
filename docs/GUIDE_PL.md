@@ -1,298 +1,198 @@
-# RAVNUX — od startu ISO do testów po instalacji
+# RAVNUX — instrukcja użytkownika
 
-Ta instrukcja dotyczy NOWEGO ISO z XLibre. Starsze ISO trzeba zbudować ponownie.
-Najprostsza ścieżka: komputer x86_64, UEFI, pusty dysk testowy, root ext4.
-Instrukcja jest dostępna offline z menu aplikacji „RAVNUX — test and installation guide” albo komendą `ravnux-guide` (wyjście klawiszem q).
+RAVNUX to minimalny system x86_64 oparty na Arch Linux, z pulpitem XFCE,
+Fish i ciemnym motywem w kolorach purpury i różu.
 
-## 1. Uruchom ISO i otwórz terminal
+Ta instrukcja jest dostępna wyłącznie na live ISO przez `ravnux-guide`
+lub menu aplikacji → „RAVNUX — user guide” (po polsku „instrukcja użytkownika”).
+Nie jest kopiowana do systemu na dysku. Jeśli chcesz ją zachować,
+przed restartem skopiuj plik `/usr/share/ravnux/guide-pl.md` na własny nośnik.
 
-W menu boot wybierz zwykły wpis RAVNUX. Po uruchomieniu powinien pojawić się XFCE i konto live `ravnux`, bez pytania o hasło.
+Nawigacja: strzałki / Page Up / Page Down — przewijanie; / — szukanie;
+n — następny wynik; g — początek; G — koniec; q — zamknięcie instrukcji.
+Polecenia wykonuj w drugim oknie terminala albo po zamknięciu instrukcji.
 
-Otwórz Terminal z menu z ikoną R. Domyślna powłoka to Fish. Żeby wszystkie poniższe bloki działały dokładnie tak samo, wpisz:
+## 1. Najkrótsza droga do instalacji
 
-```sh
-bash
-```
+1. Uruchom ISO, najlepiej w trybie UEFI, i poczekaj na pulpit.
+2. Połącz się z internetem przez ikonę sieci albo `nmtui`.
+3. Otwórz Terminal z menu z ikoną R i wpisz `sudo ravnux-install`.
+4. Wybierz dysk i podaj nazwę komputera, użytkownika oraz strefę czasową.
+5. Sprawdź podsumowanie, potwierdź skasowanie dysku i rozpoczęcie instalacji.
+6. Ustaw hasło konta. Po zakończeniu wybierz restart i wyjmij nośnik live.
+7. Zaloguj się swoim nowym kontem.
 
-Dalsze polecenia wpisuj w tym terminalu. Po pierwszym uruchomieniu zainstalowanego systemu również wpisz `bash` przed blokami z tej instrukcji.
+**Kreator usuwa wszystkie dane i partycje z wybranego dysku.**
+Jeżeli chcesz zachować istniejący system lub pliki na tym dysku,
+nie potwierdzaj kasowania. Przed instalacją wykonaj kopię potrzebnych danych.
 
-## 2. Sprawdź, czy uruchomiony jest właściwy system i XLibre
+## 2. Co przygotować
 
-```sh
-cat /etc/os-release
-printf 'Sesja: %s\n' "$XDG_SESSION_TYPE"
-pacman -Q xlibre-xserver xlibre-input-libinput
-xdpyinfo | grep -i vendor
-```
+- Komputer Intel/AMD x86_64. Obraz nie jest przeznaczony dla Apple Silicon.
+- Dysk docelowy o pojemności co najmniej 32 GiB, przeznaczony w całości na RAVNUX.
+- Działające połączenie z internetem: instalator pobiera pakiety z repozytoriów.
+- Nazwę komputera, nazwę konta i hasło, które ustawisz podczas instalacji.
 
-Oczekiwane: RAVNUX, sesja `x11`, dwa pakiety XLibre i vendor zawierający `XLibre`.
-Sprawdź też brak starego serwera:
+ISO obsługuje UEFI i BIOS. Aby zainstalować system w UEFI, wybierz w menu
+rozruchowym komputera wpis USB oznaczony UEFI. Secure Boot musi być wyłączony.
+Jeśli komputer uruchomi ISO w BIOS, kreator przygotuje instalację BIOS.
+Tryb jest wykrywany automatycznie i wyświetlany przed wyborem dysku.
 
-```sh
-pacman -Q xorg-server
-```
+Nie musisz sam tworzyć ani formatować partycji. Kreator robi to po potwierdzeniu.
+Nie tworzy szyfrowania, LVM, RAID, dual boot, osobnego `/home` ani swapu.
+Hibernacja wymaga późniejszej konfiguracji.
 
-Oczekiwany błąd „package 'xorg-server' was not found” — tutaj oznacza poprawny wynik. Biblioteki libX11 i narzędzia o nazwach `xorg-*` mogą pozostać: są klientami X11, a serwerem jest XLibre.
+## 3. Sesja live i internet
 
-## 3. Podłącz internet
+Live loguje automatycznie konto `ravnux`; sudo nie wymaga w niej hasła.
+Pliki zapisane w katalogu domowym i zmiany ustawień live znikną po restarcie.
+Instalator nie przenosi Twoich plików z live do nowego konta na dysku.
 
-Z kablem Ethernet najpierw wpisz:
-
-```sh
-nmcli device status
-getent hosts archlinux.org
-curl -I --max-time 15 https://archlinux.org
-```
-
-Powinno być połączenie `connected`, adresy IP domeny i odpowiedź HTTP.
-Jeśli używasz Wi-Fi:
+Ethernet zwykle łączy się automatycznie. Wi-Fi wybierz z ikony sieci w panelu.
+Możesz też otworzyć tekstowe ustawienia sieci:
 
 ```sh
 nmtui
 ```
 
-Wybierz „Activate a connection”, swoją sieć i wpisz hasło. Wyjdź z nmtui, potem powtórz `getent` oraz `curl` powyżej.
+Wybierz „Activate a connection”, swoją sieć i wpisz hasło.
+Wyjdź do terminala przed uruchomieniem instalatora.
+Po instalacji może być potrzebne ponowne połączenie z Wi-Fi:
+profile sieciowe z sesji live nie są kopiowane na dysk.
 
-Sprawdź datę i synchronizację:
+Domyślna powłoka to Fish. Polecenia z tej instrukcji możesz wpisywać bezpośrednio
+w terminalu; nie wymagają przełączania na Bash.
 
-```sh
-timedatectl status
-```
+## 4. Kreator instalacji krok po kroku
 
-Jeżeli data jest błędna, przed instalacją doprowadź zegar do właściwej daty; pobieranie HTTPS i podpisy pakietów wymagają poprawnego czasu.
-
-## 4. Przetestuj pulpit, grafikę i wejście
-
-```sh
-xrandr --query
-lspci -k
-```
-
-Sprawdź ręcznie:
-
-- Czy widzisz purpurowe miasto, różowe logo R, panel i purpurowo-różowy terminal.
-- Czy mysz, klawiatura, touchpad, scroll i klawisze głośności/jasności działają.
-- Czy okna da się przesuwać, maksymalizować i zamykać.
-- Czy rozdzielczość i drugi monitor działają w Settings → Display.
-- Czy menu aplikacji, Thunar i ustawienia działają bez zawieszeń.
-
-Kompozytor jest celowo wyłączony, dlatego brak efektów przezroczystości nie jest błędem.
-
-## 5. Przetestuj dźwięk i mikrofon
+Uruchom z terminala w sesji live:
 
 ```sh
-wpctl status
-pavucontrol
+sudo ravnux-install
 ```
 
-W pavucontrol wybierz właściwe wyjście, profil karty oraz mikrofon. Wyłącz wyciszenie. Zamknij okno i uruchom test głośników:
+Polecenie bez argumentów otwiera interaktywny kreator. Możesz także użyć
+`sudo ravnux-setup` — to ten sam kreator.
+
+### Wybór dysku
+
+Kreator pokazuje nazwy dysków, pojemność, model i sposób podłączenia.
+Wpisz ścieżkę całego dysku, np. `/dev/nvme0n1` lub `/dev/sda`.
+Nazwy są przykładami: wybieraj na podstawie modelu i pojemności swojego urządzenia.
+Partycja taka jak `/dev/nvme0n1p2` nie jest całym dyskiem.
+
+Dyski zamontowane, aktywny swap, urządzenia tylko do odczytu i aktywne
+mapowania LVM/LUKS/RAID zostaną odrzucone. Dotyczy to także zamontowanego
+nośnika, z którego działa live ISO. Kreator nie odmontowuje ich automatycznie.
+
+### Nazwa komputera, konto i strefa czasowa
+
+- „Computer name”: nazwa komputera, domyślnie `ravpc`; użyj liter, cyfr i myślników.
+- „Username”: Twoje konto, np. `bystander`; użyj małych liter i cyfr,
+  zacznij od litery. Nazwy `root` i `ravnux` są zarezerwowane.
+- „Timezone”: domyślnie `Europe/Warsaw`; Enter zachowuje wartość domyślną.
+
+### Potwierdzenia i zapis na dysk
+
+Kreator ponownie pokazuje wybrany dysk i plan instalacji.
+Dopiero wpisanie dokładnego `ERASE` wraz z jego ścieżką pozwala go skasować,
+np. `ERASE /dev/nvme0n1`. Każdy inny tekst anuluje operację.
+
+Powstaje tablica partycji GPT oraz:
+
+- UEFI: partycja EFI 1 GiB FAT32 i root ext4 na pozostałym miejscu;
+- BIOS: partycja BIOS boot 2 MiB i root ext4 na pozostałym miejscu.
+
+Następnie właściwy instalator pokazuje partycję root i prosi o `INSTALL`.
+Na tym etapie partycje są już przygotowane i wcześniejsze dane zostały usunięte.
+Wpisz `INSTALL`, aby rozpocząć pobieranie pakietów i konfigurację systemu.
+
+Podaj hasło nowego konta dwukrotnie. Podczas wpisywania nie widać znaków — to normalne.
+Poczekaj na zakończenie instalacji. Kreator odmontuje system i zapyta
+„Restart now? [y/N]”. Wpisz `y`, aby uruchomić komputer ponownie,
+albo Enter, aby pozostać w live. Wyjmij USB podczas restartu.
+
+Jeżeli pojawi się błąd, zachowaj jego dokładny komunikat.
+Instalator nie cofa zapisanych zmian. Ponowne uruchomienie kreatora i potwierdzenie
+kasowania usunie cały wybrany dysk jeszcze raz.
+
+Tryb zaawansowany dla własnych, wcześniej przygotowanych pustych partycji
+opisuje `ravnux-install --help`. Wywołanie instalatora
+z argumentami nie partycjonuje ani nie formatuje dysku.
+
+## 5. Pierwsze logowanie i zawartość systemu
+
+Na dysku logujesz się kontem utworzonym w kreatorze, z ustawionym hasłem.
+Sudo pyta o hasło tego samego konta. Nie ma autologowania ani konta live `ravnux`.
+Interfejs jest domyślnie angielski, a polskie locale również jest wygenerowane.
+
+Zainstalowany system zawiera podstawę Arch Linux, kernel, firmware,
+mikrokod CPU, otwarte sterowniki grafiki Mesa/XLibre, sieć i Wi-Fi,
+Bluetooth, dźwięk PipeWire, pulpit XFCE, menedżer plików Thunar i terminal z Fish.
+Wymagane zależności tych pakietów są instalowane automatycznie.
+
+Przeglądarkę, edytor, aplikacje do pracy, gry, dodatkowe sterowniki Vulkan
+lub własnościowy sterownik NVIDIA doinstalujesz według potrzeb.
+Nie ma sklepu z aplikacjami ani helpera AUR.
+Guide, kreator, narzędzia instalacji i dodatkowe narzędzia diagnostyczne live
+nie są kopiowane na dysk. Brak `ravnux-guide` po instalacji jest zamierzony.
+
+## 6. Aktualizacje i własne aplikacje
+
+RAVNUX jest systemem rolling release opartym na Arch Linux.
+Aktualizacje wykonujesz samodzielnie. Pełna aktualizacja systemu:
 
 ```sh
-speaker-test -D default -c 2 -t wav -l 1
+sudo pacman -Syu
 ```
 
-Oczekiwane: komunikaty/dźwięk lewego i prawego kanału. Jeżeli program nie kończy się lub chcesz go przerwać, użyj Ctrl+C.
-
-Nagraj 5 sekund mikrofonu, mówiąc do niego:
+Aby znaleźć pakiet, użyj wyszukiwania, np.:
 
 ```sh
-arecord -D default -f S16_LE -r 48000 -c 1 -d 5 "$HOME/ravnux-mic.wav"
-aplay -D default "$HOME/ravnux-mic.wav"
+pacman -Ss firefox
 ```
 
-Powinieneś usłyszeć nagranie. Jeśli mikrofon albo wyjście jest błędne, zmień je w pavucontrol i powtórz test. Sprawdź także słuchawki, HDMI i Bluetooth, jeśli ich używasz.
-
-## 6. Bluetooth, USB i usypianie
+Aby zainstalować wybraną aplikację wraz z zależnościami, np. przeglądarkę:
 
 ```sh
-systemctl status bluetooth --no-pager
-bluetoothctl list
-lsusb
-lsblk -o NAME,SIZE,FSTYPE,MOUNTPOINTS,MODEL
+sudo pacman -S --needed firefox
 ```
 
-Parowanie przetestuj przez aplikację Bluetooth Manager. Włóż pendrive i otwórz go w Thunarze; sprawdź odczyt oraz bezpieczne odmontowanie.
+To przykłady, nie lista wymaganych aplikacji. Przed instalowaniem nowych pakietów
+wykonaj pełną aktualizację. Nie używaj samego `pacman -Sy` do odświeżania baz
+bez aktualizacji systemu. Czytaj komunikaty i podsumowanie transakcji pacmana.
+Repozytorium stable XLibre i klucze podpisów są już skonfigurowane przez instalator.
 
-Na laptopie sprawdź jasność, zasilanie z baterii i zamknięcie pokrywy. Usypianie testuj po zapisaniu wyników:
+## 7. Codzienne ustawienia pulpitu
 
-```sh
-systemctl suspend
-```
+- Tapeta: prawy przycisk na pulpicie → Desktop Settings → Background.
+  Domyślna grafika znajduje się w `/usr/share/backgrounds/ravnux/cyberpunk-city.jpg`.
+  Późniejszy wybór własnej tapety zostaje zachowany.
+- Rozdzielczość, skalowanie i monitory: Settings → Display.
+- Panel: prawy przycisk na panelu → Panel → Panel Preferences.
+- Dźwięk i mikrofon: ikona głośności albo `pavucontrol`; wybierz wyjście,
+  wejście i upewnij się, że nie są wyciszone.
+- Bluetooth: Bluetooth Manager z menu aplikacji.
+- Terminal: Edit → Preferences → Appearance; możesz zmienić font,
+  kolory i przezroczystość.
+- Kompozytor i cienie: Settings → Window Manager Tweaks → Compositor.
+  Kompozytor XFWM jest domyślnie włączony. Możesz go wyłączyć w tym miejscu,
+  jeśli chcesz zrezygnować z efektów.
 
-Wybudź komputer i powtórz krótki test obrazu, sieci i dźwięku. Niektóre maszyny wirtualne nie udostępniają usypiania ani Bluetooth — te próby zostaw do realnego sprzętu.
+Panel ma subtelnie przezroczyste tło, a terminal domyślnie 90% krycia.
+Nie jest potrzebny dodatkowy kompozytor.
 
-## 7. Zapisz raport z sesji live
+## 8. Gdzie wrócić po pomoc
 
-```sh
-mkdir -p "$HOME/ravnux-test"
-uname -a > "$HOME/ravnux-test/kernel.txt"
-pacman -Q > "$HOME/ravnux-test/packages.txt"
-lspci -k > "$HOME/ravnux-test/pci.txt"
-lsusb > "$HOME/ravnux-test/usb.txt"
-xrandr --query > "$HOME/ravnux-test/displays.txt"
-wpctl status > "$HOME/ravnux-test/audio.txt"
-nmcli device status > "$HOME/ravnux-test/network.txt"
-systemctl --failed --no-pager > "$HOME/ravnux-test/failed-units.txt"
-sudo journalctl -b --no-pager > "$HOME/ravnux-test/journal.txt"
-```
+Pobieranie ISO i kopii instrukcji (plik GUIDE_PL.md w zasobach wydania):
+https://github.com/stainleSSStar/RAVNUX-releases/releases/latest
 
-Skopiuj katalog `ravnux-test` na drugi nośnik przez Thunar. Dane w sesji live znikną po restarcie. Pliki mogą zawierać nazwy urządzeń/sieci — przejrzyj je przed udostępnieniem.
+Składnia zarządzania pakietami:
+https://man.archlinux.org/man/pacman.8.en
 
-## 8. Instalacja — tylko jeśli chcesz już zapisać system na dysku
+Ustawienia kompozytora XFCE:
+https://docs.xfce.org/xfce/xfwm4/wmtweaks
 
-Najpierw wyjdź z przeglądania tej instrukcji, jeśli otworzyłeś ją w `less` (q), albo użyj drugiego terminala. Zostań w Bash.
-
-Sprawdź, czy ISO uruchomiono w UEFI:
-
-```sh
-test -d /sys/firmware/efi && echo UEFI || echo BIOS
-```
-
-Dalszy przykład jest wyłącznie dla UEFI. Dla wyniku BIOS uruchom ISO w UEFI albo użyj opisu BIOS w README.
-
-Pokaż dyski i wybierz DYSK TESTOWY, nie pendrive z ISO:
-
-```sh
-lsblk -d -o NAME,SIZE,MODEL,TRAN
-```
-
-Potrzebujesz GPT i dwóch partycji:
-
-| Partycja | Rozmiar | Format | Montowanie |
-| --- | --- | --- | --- |
-| EFI System Partition | 1 GiB | FAT32 | /mnt/boot/efi |
-| Root | Reszta dysku, proponowane minimum 30 GiB | ext4 | /mnt |
-
-Jeśli partycje są już przygotowane i puste, pomiń następny blok i przejdź do kroku 9.
-
-### Utworzenie partycji na całym pustym dysku testowym
-
-TEN BLOK KASUJE UKŁAD PARTYCJI I DANE NA WYBRANYM DYSKU. Wymaga wpisania jego ścieżki oraz osobnego potwierdzenia. Nie używaj go do dual boot ani dysku z danymi. Dysk musi być odmontowany i nie może mieć aktywnego swap.
-
-Najpierw:
-
-```sh
-sudo -i
-```
-
-Teraz jesteś w Bash jako root. Wklej cały blok naraz:
-
-```bash
-prepare_test_disk() {
-    test -d /sys/firmware/efi || { echo 'Uruchom ISO w UEFI.'; return 1; }
-    read -r -p 'Dysk testowy, np. /dev/nvme0n1 lub /dev/sda: ' DISK
-    [[ -b "$DISK" && "$(lsblk -dn -o TYPE "$DISK")" == disk ]] || { echo 'To nie jest cały dysk.'; return 1; }
-    lsblk -o NAME,SIZE,MODEL,FSTYPE,MOUNTPOINTS "$DISK"
-    if lsblk -n -o MOUNTPOINTS "$DISK" | grep -q '[^[:space:]]'; then
-        echo 'Dysk ma zamontowane partycje lub swap. Przerywam.'
-        return 1
-    fi
-    read -r -p "Aby skasować ten dysk, wpisz KASUJ $DISK: " CONFIRM
-    [[ "$CONFIRM" == "KASUJ $DISK" ]] || { echo 'Anulowano.'; return 1; }
-    parted -s "$DISK" mklabel gpt || return 1
-    parted -s "$DISK" mkpart ESP fat32 1MiB 1025MiB || return 1
-    parted -s "$DISK" set 1 esp on || return 1
-    parted -s "$DISK" mkpart primary ext4 1025MiB 100% || return 1
-    partprobe "$DISK" || return 1
-    udevadm settle || return 1
-    if [[ "$DISK" == *[0-9] ]]; then
-        EFI="${DISK}p1"; ROOT="${DISK}p2"
-    else
-        EFI="${DISK}1"; ROOT="${DISK}2"
-    fi
-    mkfs.fat -F 32 "$EFI" || return 1
-    mkfs.ext4 "$ROOT" || return 1
-    printf 'EFI: %s\nROOT: %s\n' "$EFI" "$ROOT"
-}
-prepare_test_disk
-```
-
-Kontynuuj tylko jeśli oba formatowania zakończyły się powodzeniem. Funkcja niczego nie montuje i nie uruchamia instalacji. Nie wykonuj bloku drugi raz po zainstalowaniu systemu.
-
-## 9. Zamontuj partycje
-
-Jeżeli jesteś już root z poprzedniego kroku, zostań w tej powłoce. W przeciwnym razie uruchom `sudo -i`.
-
-Wpisz ścieżki własnych partycji; przykłady to `/dev/nvme0n1p1` i `/dev/nvme0n1p2`:
-
-```bash
-read -r -p 'Partycja ROOT: ' ROOT
-read -r -p 'Partycja EFI: ' EFI
-mount "$ROOT" /mnt && mkdir -p /mnt/boot/efi && mount "$EFI" /mnt/boot/efi
-findmnt -R /mnt
-```
-
-Oczekiwane: root ext4 w `/mnt`, EFI vfat w `/mnt/boot/efi`. Nie uruchamiaj instalatora po błędzie montowania.
-
-## 10. Zainstaluj RAVNUX
-
-```sh
-ravnux-install --hostname ravpc --username bystander --timezone Europe/Warsaw
-```
-
-To gotowy przykład. Jeśli chcesz inną nazwę komputera albo konta, zmień `ravpc` i `bystander` przed wykonaniem.
-
-1. Sprawdź wyświetlone urządzenie root.
-2. Wpisz `INSTALL`.
-3. Poczekaj na pobranie pakietów i konfigurację systemu.
-4. Podaj dwukrotnie hasło konta `bystander`.
-5. Kontynuuj dopiero po komunikacie `Installation complete`.
-
-Repozytorium stable XLibre, podpisy pakietów, Fish, motyw i grafiki są konfigurowane automatycznie. Nie dopisuj repozytoriów ani kluczy ręcznie.
-
-Jeżeli pojawi się błąd, NIE restartuj od razu — zapisz komunikat. Instalator nie cofa zapisanych plików. Ponowne uruchomienie wymaga pustego root albo ręcznej naprawy częściowej instalacji.
-
-## 11. Odmontuj i uruchom system z dysku
-
-```sh
-umount -R /mnt && reboot
-```
-
-Wyjmij pendrive/odłącz ISO przy restarcie. Uruchom system z dysku, zaloguj się jako `bystander` swoim hasłem. Autologowanie i sudo bez hasła dotyczą wyłącznie sesji live.
-
-## 12. Test po instalacji
-
-Otwórz terminal i wpisz `bash`, potem:
-
-```sh
-cat /etc/os-release
-printf 'Powłoka użytkownika: '
-getent passwd "$USER" | cut -d: -f7
-pacman -Q xlibre-xserver xlibre-input-libinput
-systemctl --failed --no-pager
-nmcli device status
-wpctl status
-sudo -k
-sudo true
-```
-
-Oczekiwane: RAVNUX, `/usr/bin/fish`, pakiety XLibre, działająca sieć i dźwięk oraz pytanie sudo o hasło. Polecenie `bash` zmienia tylko bieżącą powłokę; nie zmienia domyślnego Fish.
-
-Sprawdź brak konta i przywilejów live:
-
-```sh
-if getent passwd ravnux; then echo 'BŁĄD: konto live zostało w systemie'; else echo 'OK: brak konta live'; fi
-if test -e /etc/sudoers.d/10-ravnux-live; then echo 'BŁĄD: sudo live zostało w systemie'; else echo 'OK: brak sudo live'; fi
-```
-
-Powtórz test dźwięku/mikrofonu i ręczne testy pulpitu. `lspci`, `lsusb`, `xdpyinfo` i `xrandr` są dodatkowymi narzędziami ISO; nie muszą być zainstalowane na dysku. `ravnux-guide` pozostaje dostępne także po instalacji.
-
-Na końcu zmień tapetę w ustawieniach, wyloguj się i zaloguj — własny wybór powinien pozostać. Wykonaj pełne wyłączenie i ponowne uruchomienie komputera.
-
-## Gdy nie pojawia się pulpit
-
-Na nowym ISO przejdź do konsoli przez Ctrl+Alt+F2, zaloguj się jako `ravnux` bez hasła i wpisz:
-
-```sh
-sudo systemctl status ravnux-live-setup lightdm --no-pager
-sudo journalctl -b -u lightdm --no-pager
-sudo journalctl -b -k --no-pager
-```
-
-Nie kasuj sterowników na ślepo. Zapisz błąd i model GPU. Na zainstalowanym systemie logujesz się swoim kontem i hasłem; usługa `ravnux-live-setup` nie jest tam obecna.
-
-## Źródła konfiguracji XLibre
-
-- https://xlibre-arch.github.io/ — repozytorium stable i podpisy pakietów.
-- https://packages.xlibre.net/arch/stable/x86_64/ — binarne pakiety XLibre dla Arch.
-- https://wiki.archlinux.org/title/Installation_guide — partycje i podstawy instalacji Arch.
+Jeśli coś przestanie działać, zanotuj czynność, po której pojawił się problem,
+i dokładny komunikat błędu. Diagnostykę CLI można wtedy dobrać do konkretnej
+usterki; nie musisz wykonywać testów sprzętu ani zbierać raportów przed instalacją.

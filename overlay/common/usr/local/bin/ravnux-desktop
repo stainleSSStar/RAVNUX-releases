@@ -3,19 +3,37 @@ set -euo pipefail
 wallpaper=/usr/share/backgrounds/ravnux/cyberpunk-city.jpg
 marker="$HOME/.config/ravnux/wallpaper-initialized"
 [[ ! -f $marker ]] || exit 0
-[[ -r $wallpaper ]] || exit 1
-# xfdesktop creates monitor-specific properties during startup.
+[[ -r $wallpaper ]] || { echo "RAVNUX: missing wallpaper: $wallpaper" >&2; exit 1; }
+
+# XFCE 4.20 can render its default without creating any last-image properties.
+# Use XRandR connector names, as xfdesktop does, instead of waiting for those
+# properties to appear. Keep existing user choices, including before the marker.
 for _ in {1..40}; do
- mapfile -t properties < <(xfconf-query -c xfce4-desktop -l 2>/dev/null | sed -n 's@/last-image$@@p')
- if ((${#properties[@]})); then
-  for property in "${properties[@]}"; do
-   xfconf-query -c xfce4-desktop -p "$property/last-image" -s "$wallpaper"
-   xfconf-query -c xfce4-desktop -p "$property/image-style" -s 5
-  done
-  mkdir -p "$(dirname "$marker")"
-  printf '%s\n' "$wallpaper" > "$marker"
-  exit 0
+ if properties=$(xfconf-query -c xfce4-desktop -l) && outputs=$(xrandr --query); then
+  monitors=$(printf '%s\n' "$outputs" | awk '
+   /^Screen [0-9]+:/ { screen=$2; sub(/:$/, "", screen) }
+   $2 == "connected" && /[0-9]+x[0-9]+[+-][0-9]+[+-][0-9]+/ {
+    printf "/backdrop/screen%d/monitor%s/workspace0\n", screen, $1
+   }')
+  if [[ -n $monitors ]]; then
+   # A fresh profile uses one background for every workspace. Do not change
+   # workspace preferences if the user has already configured a background.
+   if ! printf '%s\n' "$properties" | grep -q '/last-image$'; then
+    xfconf-query -c xfce4-desktop -p /backdrop/single-workspace-number -n -t int -s 0
+    xfconf-query -c xfce4-desktop -p /backdrop/single-workspace-mode -n -t bool -s true
+   fi
+   while IFS= read -r property; do
+    if ! printf '%s\n' "$properties" | grep -Fxq "$property/last-image"; then
+     xfconf-query -c xfce4-desktop -p "$property/image-style" -n -t int -s 5
+     xfconf-query -c xfce4-desktop -p "$property/last-image" -n -t string -s "$wallpaper"
+    fi
+   done <<< "$monitors"
+   mkdir -p "$(dirname "$marker")"
+   printf '%s\n' "$wallpaper" > "$marker"
+   exit 0
+  fi
  fi
  sleep 0.5
 done
+echo 'RAVNUX: wallpaper initialization failed; check the XFCE session bus and XRandR outputs.' >&2
 exit 1

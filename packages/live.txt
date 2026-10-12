@@ -15,4 +15,6 @@ efibootmgr
 pciutils
 usbutils
 xorg-xdpyinfo
-xorg-xrandr
+nano
+less
+alsa-utils
