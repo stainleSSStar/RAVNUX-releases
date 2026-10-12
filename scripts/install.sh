@@ -7,6 +7,7 @@ Usage: sudo ravnux-install --hostname NAME --username NAME [--timezone Europe/Wa
 Mount an EMPTY ext4/btrfs root at /mnt and a dedicated EMPTY FAT32 ESP at /mnt/boot/efi.
 Default: UEFI. BIOS: supply the whole boot disk; GPT requires a BIOS boot partition.
 Requires internet. Does not partition or format disks. Password is requested interactively.
+Run sudo ravnux-install with no arguments (or sudo ravnux-setup) for the disk setup wizard.
 HELP
 }
 fail() { echo "Error: $*" >&2; exit 1; }
@@ -27,6 +28,7 @@ validate_target_files() {
  fi
 }
 target=/mnt hostname='' username='' timezone=Europe/Warsaw bios_disk=''
+if (($# == 0)); then exec /usr/local/bin/ravnux-setup; fi
 while (($#)); do
  case "$1" in
   -h|--help) usage; exit 0 ;;
@@ -74,7 +76,8 @@ echo 'This installs files and a bootloader on the mounted target. Type INSTALL t
 read -r confirmation
 [[ $confirmation == INSTALL ]] || fail 'Cancelled.'
 mapfile -t packages < "$packages_file"
-packages+=(grub efibootmgr)
+packages+=(grub)
+[[ -n $bios_disk ]] || packages+=(efibootmgr)
 [[ $root_type != btrfs ]] || packages+=(btrfs-progs)
 systemctl start pacman-init.service
 # pacstrap -K creates a separate target keyring. Seed it before resolving

@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-"""Install RAVNUX onto a blank disk inside a VM (BIOS), then boot from that disk."""
+"""Install RAVNUX onto a blank disk inside BIOS/UEFI VMs through the interactive wizard, then boot from that disk."""
 import argparse
 import importlib.util
 import os
@@ -22,27 +22,31 @@ PASSWORD = 'ravnux-test'
 # The ERR trap marker matches the one SerialConsole.expect treats as a failure.
 SETUP = '''stty -echo; set -euo pipefail; trap 'printf "\\nRAVNUX_VM_FAIL\\n" >&2' ERR; printf '\\nGUEST_READY\\n'
 '''
-DISK_PREP = '''parted -s /dev/vda mklabel msdos mkpart primary ext4 1MiB 100%; partprobe -s /dev/vda || true; udevadm settle || true; mkfs.ext4 -F /dev/vda1; udevadm settle || true; mkdir -p /mnt; mount /dev/vda1 /mnt; printf '\\nDISK_READY\\n'
-'''
-INSTALL = f'''ravnux-install --target /mnt --hostname {HOSTNAME} --username {USERNAME} --bios-disk /dev/vda; printf '\\nINSTALL_DONE\\n'
+INSTALL = '''ravnux-install; printf '\\nINSTALL_DONE\\n'
 '''
 # Serial console instrumentation on the installed system: the shipped image has none,
 # and headless verification needs kernel output plus a getty on ttyS0.
 # Appending the variable again is safe: grub-mkconfig sources the file, last value wins.
 SERIAL_SETUP = '''arch-chroot /mnt /bin/bash -c "echo 'GRUB_CMDLINE_LINUX_DEFAULT=\\"loglevel=3 console=tty0 console=ttyS0,115200\\"' >> /etc/default/grub; grub-mkconfig -o /boot/grub/grub.cfg; systemctl enable serial-getty@ttyS0.service"; printf '\\nSERIAL_SETUP_DONE\\n'
 '''
-POWER_OFF = '''sync; umount /mnt || { echo 'umount /mnt failed; holders:'; grep ' /mnt' /proc/self/mountinfo || true; for fd in /proc/[0-9]*/fd/*; do readlink "$fd" 2>/dev/null; done | grep '^/mnt' | sort -u || true; umount -l /mnt; }; printf '\\nUMOUNTED\\n'; poweroff
+POWER_OFF = '''sync; umount -R /mnt || { echo 'umount /mnt failed; holders:'; grep ' /mnt' /proc/self/mountinfo || true; for fd in /proc/[0-9]*/fd/*; do readlink "$fd" 2>/dev/null; done | grep '^/mnt' | sort -u || true; umount -Rl /mnt; }; printf '\\nUMOUNTED\\n'; poweroff
 '''
 # Single-quoted for Fish: the whole payload must reach bash -c unexpanded.
-VERIFY = '''bash -c 'trap "printf \\"\\nRAVNUX_VM_FAIL\\n\\"" ERR; set -e; grep -qx {hostname} /etc/hostname; for i in $(seq 1 120); do if systemctl is-active lightdm 2>/dev/null | grep -qx active; then break; fi; sleep 1; done; systemctl is-active NetworkManager lightdm; test -s /usr/share/pixmaps/ravnux-logo.png; test -s /usr/share/ravnux/guide-pl.md; printf "\\nRAVNUX_INSTALL_OK\\n"'
+VERIFY = '''bash -c 'trap "printf \\"\\nRAVNUX_VM_FAIL\\n\\"" ERR; set -e; grep -qx {hostname} /etc/hostname; for i in $(seq 1 120); do if systemctl is-active lightdm 2>/dev/null | grep -qx active; then break; fi; sleep 1; done; systemctl is-active NetworkManager lightdm; test -s /usr/share/pixmaps/ravnux-logo.png; test ! -e /usr/share/ravnux/guide-pl.md; test ! -e /usr/local/bin/ravnux-guide; test ! -e /usr/share/applications/ravnux-guide.desktop; test ! -e /usr/local/bin/ravnux-setup; test ! -e /usr/local/bin/ravnux-install; printf "\\nRAVNUX_INSTALL_OK\\n"'
 '''.format(hostname=HOSTNAME)
 
 
-def qemu_command(disk, serial, iso=None):
+def qemu_command(disk, serial, iso=None, mode="bios", variables=None):
     command = ['qemu-system-x86_64', '-m', '3072', '-smp', '2',
                '-drive', f'file={disk},if=virtio,format=raw',
                '-display', 'none', '-serial', f'unix:{serial},server=on,wait=off',
                '-nic', 'user,model=virtio-net-pci', '-no-reboot']
+    if mode == 'uefi':
+        code = Path('/usr/share/OVMF/OVMF_CODE_4M.fd')
+        if not code.is_file() or variables is None:
+            raise RuntimeError('UEFI install tests require ovmf firmware and writable variables')
+        command += ['-drive', f'if=pflash,format=raw,readonly=on,file={code}',
+                    '-drive', f'if=pflash,format=raw,file={variables}']
     if iso is not None:
         command += ['-cdrom', str(iso), '-boot', 'd']
     if os.access('/dev/kvm', os.R_OK | os.W_OK):
@@ -87,17 +91,22 @@ def stop_vm(process, console, connection, out, prefix, seconds):
                 process.wait()
 
 
-def install(iso, out, timeout):
+def install(iso, out, timeout, mode):
     with tempfile.TemporaryDirectory(prefix='ravnux-install-') as directory:
         directory = Path(directory)
         disk = directory / 'disk.img'
         with disk.open('wb') as image:
-            image.truncate(16 * 1024 ** 3)
+            image.truncate(36 * 1024 ** 3)
+
+        variables = None
+        if mode == 'uefi':
+            variables = directory / 'vars.fd'
+            shutil.copyfile('/usr/share/OVMF/OVMF_VARS_4M.fd', variables)
 
         print('phase 1: boot the ISO and run ravnux-install', flush=True)
-        command = qemu_command(disk, directory / 'live.sock', iso)
+        command = qemu_command(disk, directory / 'live.sock', iso, mode, variables)
         process, console, connection = start_vm(command, directory / 'live.sock',
-                                                out / 'vm-install-live-qemu.log', timeout)
+                                                out / f'vm-install-{mode}-live-qemu.log', timeout)
         try:
             console.expect(b'login:')
             connection.sendall(b'ravnux\n')
@@ -107,30 +116,43 @@ def install(iso, out, timeout):
             console.expect(b'# ')
             connection.sendall(SETUP.encode())
             console.expect(b'\r\nGUEST_READY\r\n')
-            connection.sendall(DISK_PREP.encode())
-            console.expect(b'\r\nDISK_READY\r\n')
             connection.sendall(INSTALL.encode())
+            console.expect(b'Target whole disk')
+            connection.sendall(b'/dev/vda\n')
+            console.expect(b'Computer name')
+            connection.sendall(HOSTNAME.encode() + b'\n')
+            console.expect(b'Username (root and ravnux are reserved)')
+            connection.sendall(USERNAME.encode() + b'\n')
+            console.expect(b'Timezone')
+            connection.sendall(b'Europe/Warsaw\n')
+            console.expect(b'Type ERASE /dev/vda to continue')
+            connection.sendall(b'ERASE /dev/vda\n')
             console.expect(b'Type INSTALL to continue:')
             connection.sendall(b'INSTALL\n')
             console.expect(b'New password:')
             connection.sendall(PASSWORD.encode() + b'\n')
             console.expect(b'Retype new password:')
             connection.sendall(PASSWORD.encode() + b'\n')
+            console.expect(b'Restart now?')
+            connection.sendall(b'n\n')
             console.expect(b'\r\nINSTALL_DONE\r\n')
             print('phase 1: ravnux-install finished', flush=True)
-            connection.sendall(SERIAL_SETUP.encode())
+            remount = 'mount /dev/vda2 /mnt; '
+            if mode == 'uefi':
+                remount += 'mount /dev/vda1 /mnt/boot/efi; '
+            connection.sendall((remount + SERIAL_SETUP).encode())
             console.expect(b'\r\nSERIAL_SETUP_DONE\r\n')
             connection.sendall(POWER_OFF.encode())
             console.expect(b'\r\nUMOUNTED\r\n')
         finally:
-            stop_vm(process, console, connection, out, 'live', seconds=30)
+            stop_vm(process, console, connection, out, f'{mode}-live', seconds=30)
         if process.returncode != 0:
             raise RuntimeError(f'live VM exited with code {process.returncode}')
 
         print('phase 2: boot from the installed disk', flush=True)
-        command = qemu_command(disk, directory / 'disk.sock')
+        command = qemu_command(disk, directory / 'disk.sock', mode=mode, variables=variables)
         process, console, connection = start_vm(command, directory / 'disk.sock',
-                                                out / 'vm-install-disk-qemu.log', min(timeout, 900))
+                                                out / f'vm-install-{mode}-disk-qemu.log', min(timeout, 900))
         try:
             console.expect(b'login:')
             connection.sendall(USERNAME.encode() + b'\n')
@@ -140,13 +162,14 @@ def install(iso, out, timeout):
             connection.sendall(VERIFY.encode())
             console.expect(b'\r\nRAVNUX_INSTALL_OK\r\n')
         finally:
-            stop_vm(process, console, connection, out, 'disk', seconds=1)
+            stop_vm(process, console, connection, out, f'{mode}-disk', seconds=1)
 
 
 def main():
     parser = argparse.ArgumentParser(description=__doc__)
     parser.add_argument('iso', type=Path)
     parser.add_argument('--output', type=Path, default=Path('out'))
+    parser.add_argument('--mode', choices=('bios', 'uefi', 'both'), default='both')
     parser.add_argument('--timeout', type=int, default=3600)
     args = parser.parse_args()
     args.output.mkdir(parents=True, exist_ok=True)
@@ -156,13 +179,16 @@ def main():
         parser.error('Existing ISO and positive timeout required')
     if not shutil.which('qemu-system-x86_64'):
         parser.error('qemu-system-x86_64 is required')
-    install(args.iso.resolve(), args.output, args.timeout)
+    modes = ('bios', 'uefi') if args.mode == 'both' else (args.mode,)
+    for mode in modes:
+        print(f'Testing {mode.upper()} interactive installation', flush=True)
+        install(args.iso.resolve(), args.output, args.timeout, mode)
     report.write_text(
-        f'PASS: BIOS install onto a blank disk; boot from disk; login as {USERNAME}; '
-        'NetworkManager and LightDM active; hostname set; bundled logo and guide present.\n'
+        f'PASS: {", ".join(modes).upper()} CLI wizard install onto a blank disk; boot from disk; login as {USERNAME}; '
+        'NetworkManager and LightDM active; hostname set; bundled logo present; live guide and installers absent.\n'
         'Test instrumentation: serial console kernel arguments and serial-getty@ttyS0 '
         'were enabled on the installed system after installation, for headless verification only.\n'
-        'Not covered: UEFI install, physical hardware, encryption/LVM, dual boot.\n')
+        'Not covered: physical hardware, encryption/LVM, dual boot.\n')
 
 
 if __name__ == '__main__':

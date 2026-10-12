@@ -2,25 +2,25 @@
 
 Minimalistyczny system **x86_64 oparty na Arch Linux**, z XFCE na XLibre, Fish i własnym purpurowo-różowym motywem. Repozytorium zawiera konfigurację obrazu live, instalator systemu i proces budowania ISO. Projekt jest wstępny: pomyślna kompilacja nie oznacza przetestowania sprzętu ani instalacji.
 
-**Instrukcja krok po kroku po uruchomieniu ISO: [GUIDE_PL.md](docs/GUIDE_PL.md)**. Jest też dostępna offline przez `ravnux-guide` oraz menu aplikacji.
+**Instrukcja krok po kroku po uruchomieniu ISO: [GUIDE_PL.md](docs/GUIDE_PL.md)**. W sesji live jest też dostępna offline przez `ravnux-guide` oraz menu aplikacji. Instrukcja i instalatory nie trafiają na dysk.
 
 ## Co zawiera system
 
 - Linux, oficjalne firmware Arch, mikrokod Intel/AMD, firmware SOF dla układów audio.
-- XFCE na X11 z serwerem XLibre (gałąź stable): jeden panel, menedżer plików, ustawienia, terminal, powiadomienia i zarządzanie energią. Kompozytor domyślnie wyłączony.
+- XFCE na X11 z serwerem XLibre (gałąź stable): jeden panel, menedżer plików, ustawienia, terminal, powiadomienia i zarządzanie energią. Wbudowany kompozytor XFWM jest włączony: cienie okien, subtelna przezroczystość panelu i terminala.
 - Fish jako powłoka użytkownika; Bash pozostaje zależnością systemu i służy do wykonywania skryptów.
 - PipeWire + WirePlumber, obsługa ALSA i aplikacji PulseAudio, kontrola głośności i mikrofonu.
 - NetworkManager, Wi-Fi, Bluetooth, montowanie nośników USB oraz uwierzytelnianie administracyjne.
-- Mesa: otwarte sterowniki grafiki Intel/AMD oraz Nouveau dla obsługiwanych kart NVIDIA. Bez własnościowego sterownika NVIDIA i pakietów AUR.
+- Mesa/OpenGL: otwarte sterowniki grafiki Intel/AMD oraz Nouveau dla obsługiwanych kart NVIDIA. Bez własnościowego sterownika NVIDIA, dodatkowych sterowników Vulkan i pakietów AUR.
 - LightDM, własny motyw GTK/Xfwm, ciemne purpurowe tło i różowo-purpurowy terminal/Fish. Domyślna tapeta to cyberpunkowe miasto z purpurowymi neonami; logo to różowa litera R na purpurowym tle. Oba pliki są dostarczane na ISO oraz w systemie docelowym, bez pobierania przy logowaniu.
 
-Bez preinstalowanej przeglądarki, pakietu biurowego, gier, sklepu z aplikacjami, helpera AUR, serwera SSH i środowiska programistycznego. Pakiety `packages/system.txt` stanowią zestaw docelowy; pacman instaluje także ich wymagane zależności. GRUB/efibootmgr oraz ewentualnie btrfs-progs są dodawane przez instalator jako narzędzia rozruchu/filesystemu.
+Bez preinstalowanej przeglądarki, pakietu biurowego, gier, sklepu z aplikacjami, helpera AUR, serwera SSH i środowiska programistycznego. Pakiety `packages/system.txt` stanowią zestaw docelowy; pacman instaluje także ich wymagane zależności. GRUB, przy UEFI efibootmgr, oraz ewentualnie btrfs-progs są dodawane przez instalator jako narzędzia rozruchu/filesystemu.
 
 To Arch rolling release korzystający z repozytoriów **core/extra** i dodatkowego **xlibre-stable**, bez testing i beta. Brak mechanizmu automatycznego aktualizowania systemu. Budowanie w różnych dniach może pobrać różne wersje pakietów; nie jest to zamrożony ani bitowo powtarzalny obraz.
 
 ## Pobranie ISO z GitHub
 
-Otwórz **Actions → Build RAVNUX ISO → Run workflow** i zaznacz `build_iso`. Push i pull request uruchamiają walidację źródeł oraz przygotowanie profilu; pełna budowa ISO wymaga ręcznego uruchomienia. Opcja `vm_tests` dodatkowo uruchamia testy rozruchu BIOS i UEFI, a opcja `install_test` — instalację na pustym dysku BIOS i start z tego dysku; wydanie oznaczone jako wstępne (prerelease) oznacza, że któryś z tych testów nie przeszedł lub nie został uruchomiony.
+Otwórz **Actions → Build RAVNUX ISO → Run workflow** i zaznacz `build_iso`. Push i pull request uruchamiają walidację źródeł oraz przygotowanie profilu; pełna budowa ISO wymaga ręcznego uruchomienia. Opcja `vm_tests` dodatkowo uruchamia testy rozruchu BIOS i UEFI, a opcja `install_test` — interaktywną instalację na pustym dysku oraz start z dysku w BIOS i UEFI; wydanie oznaczone jako wstępne (prerelease) oznacza, że któryś z tych testów nie przeszedł lub nie został uruchomiony.
 
 Po udanej budowie ISO wraz z sumą `SHA256SUMS`, listami pakietów i logami budowy/VM jest publikowane jako wydanie w publicznym repozytorium wydań: **https://github.com/stainleSSStar/RAVNUX-releases/releases**. Publikacja używa sekretu `RELEASE_TOKEN` i działa również wtedy, gdy testy VM nie przeszły — wtedy dołączone logi wskazują przyczynę. Artefakty Actions w prywatnym repozytorium źródłowym pozostają ograniczone limitem darmowego planu (500 MB), dlatego ISO (ok. 1,6 GB) nie może być artefaktem i jest dostarczane wyłącznie przez repozytorium wydań.
 
@@ -47,36 +47,39 @@ Po starcie automatycznie loguje się użytkownik `ravnux` z Fish i XFCE. Wyłąc
 
 ## Instalacja na dysk
 
-Instalator wymaga internetu i **wcześniej przygotowanych, pustych partycji**. Sam nie partycjonuje i nie formatuje dysku. Obsługuje zwykły root ext4 albo btrfs, bez LUKS/LVM, RAID i automatycznego dual boot. Użyj osobnej, dedykowanej partycji EFI: instalator zapisuje standardowy loader UEFI `EFI/BOOT/BOOTX64.EFI`, bez modyfikowania NVRAM.
+Uruchom ISO w UEFI (zalecane) lub BIOS, podłącz internet przez NetworkManager / `nmtui` i otwórz terminal:
 
-Zalecany prosty układ GPT/UEFI:
+```sh
+sudo ravnux-install
+```
 
-| Partycja | Rozmiar | Typ/system plików | Montowanie w instalatorze |
-| --- | --- | --- | --- |
-| EFI | 1 GiB | EFI System Partition / FAT32 | `/mnt/boot/efi` |
-| Root | Reszta dysku; proponowane co najmniej 30 GiB | Linux filesystem / ext4 | `/mnt` |
+Bez argumentów uruchamia interaktywny kreator `ravnux-setup`. Pyta o cały dysk docelowy, nazwę komputera, konto i strefę czasową. Przed pierwszym zapisem pokazuje dysk i wymaga dokładnego potwierdzenia `ERASE /dev/...`. **Kreator usuwa wszystkie dane i partycje na wybranym dysku. Nie obsługuje dual boot ani szyfrowania/LVM/RAID.** Blokuje dyski zamontowane, swap, urządzenia tylko do odczytu i aktywne mapowania; nie odmontowuje ich automatycznie. Wymaga co najmniej 32 GiB i internetu.
 
-Osobna partycja `/home` i swap nie są wymagane. Obecny instalator oczekuje pustego root, więc najprościej pozostawić `/home` jako katalog na root. Można później skonfigurować plik swap; hibernacja wymaga dodatkowej konfiguracji. Zamiast ext4 obsługiwany jest też btrfs. Przy BIOS/GPT potrzebna jest dodatkowa partycja BIOS boot o wielkości 1–2 MiB, bez systemu plików i bez montowania, zamiast EFI.
+Tryb uruchomienia ISO decyduje o instalacji bootloadera:
 
-Przykład po przygotowaniu partycji (nazwy urządzeń dopasuj do sprzętu):
+| Tryb | Układ GPT | Bootloader |
+| --- | --- | --- |
+| UEFI x86_64 | EFI 1 GiB FAT32 + reszta ext4 | GRUB, `EFI/BOOT/BOOTX64.EFI`, bez zmiany NVRAM |
+| BIOS | BIOS boot 2 MiB bez filesystemu + reszta ext4 | GRUB na całym wybranym dysku |
+
+Po formatowaniu kreator uruchamia właściwy instalator, który ponownie pokazuje partycję root i wymaga `INSTALL`. Następnie pobiera pakiety i pyta o hasło konta. Po sukcesie odmontowuje partycje i pyta o restart. Nie restartuje automatycznie. Po błędzie zatrzymuje pracę i pozostawia stan do diagnostyki; zapisanych danych nie cofa.
+
+### Tryb dla wcześniej przygotowanych partycji
+
+Wywołanie z argumentami zachowuje dotychczasowy tryb: nie partycjonuje ani nie formatuje. Root musi być pustą zwykłą partycją ext4/btrfs (dopuszczalne `lost+found` i `boot`), a UEFI wymaga osobnej pustej EFI FAT32. Przykład po samodzielnym przygotowaniu partycji — dopasuj nazwy urządzeń:
 
 ```sh
 sudo mount /dev/nvme0n1p2 /mnt
 sudo mkdir -p /mnt/boot/efi
 sudo mount /dev/nvme0n1p1 /mnt/boot/efi
 sudo ravnux-install --hostname ravpc --username bystander --timezone Europe/Warsaw
-```
-
-Root musi być pusty; `lost+found` i katalog `boot` są dozwolone. EFI musi być zamontowane jako FAT32. Skrypt pokazuje urządzenie docelowe i wymaga wpisania `INSTALL`. Następnie instaluje pakiety, konfiguruje system, pyta o hasło użytkownika i instaluje GRUB. Po instalacji:
-
-```sh
 sudo umount -R /mnt
 sudo reboot
 ```
 
-Usuń nośnik live. Logowanie do systemu zainstalowanego wymaga hasła; sudo również. Nie są kopiowane uprawnienia ani autologowanie sesji live. Domyślny język interfejsu to angielski, locale polskie jest także wygenerowane; strefa czasowa domyślnie Europe/Warsaw.
+Dla BIOS zamontuj tylko root i dodaj `--bios-disk /dev/sda` z nazwą całego dysku zawierającego root; na GPT przygotuj także partycję BIOS boot. Uruchomienie ISO w BIOS nie tworzy instalacji UEFI ani odwrotnie.
 
-Dla BIOS zamontuj root, ewentualnie osobne `/boot`, i dodaj `--bios-disk /dev/sda` z nazwą całego dysku zawierającego root. Na GPT potrzebna jest wcześniej przygotowana partycja BIOS boot. Przy przerwaniu instalacji skrypt kończy pracę z błędem i nie cofa zapisanych plików; napraw konfigurację ręcznie lub przygotuj ponownie pusty root przed ponowieniem.
+Po restarcie usuń nośnik live. Zainstalowany system wymaga hasła do logowania i sudo. Pozostają wyłącznie podstawa systemu, firmware i otwarte sterowniki grafiki, sieć, Bluetooth, dźwięk, XFCE, Fish i motyw; bez przeglądarki, edytora, narzędzi instalacji i `ravnux-guide`. Wymagane zależności pacmana nadal są instalowane. Guide, narzędzia testowe i edytor są wyłącznie na ISO. Osobna partycja `/home` i swap nie są tworzone; swap/hibernację możesz skonfigurować później. Domyślny interfejs jest angielski, locale polskie jest wygenerowane, a strefa domyślna to Europe/Warsaw.
 
 ## Weryfikacja i testy sprzętowe
 
@@ -103,7 +106,7 @@ Do testu instalacji na Linuxie z pakietem `qemu-system-x86` (wymaga roota w QEMU
 python3 scripts/vm-install.py out/*.iso
 ```
 
-Skrypt uruchamia ISO w VM z pustym dyskiem 16 GB, partycjonuje go (MS-DOS + ext4), przeprowadza instalację instalatorem `ravnux-install` z potwierdzeniem `INSTALL` i hasłem ustawianym przez konsolę szeregową, po czym startuje system z dysku i loguje się jako utworzony użytkownik. Na zainstalowanym systemie włącza konsolę szeregową (kernel i `serial-getty@ttyS0`) wyłącznie na potrzeby weryfikacji bez monitora; zapisuje logi `out/vm-install-*.log` oraz raport `out/VM-INSTALL-TESTS.txt` tylko po sukcesie. Test obejmuje wyłącznie instalację BIOS; instalacja UEFI, szyfrowanie i dual boot nie są testowane.
+Skrypt testuje domyślnie BIOS i UEFI (`--mode bios` / `--mode uefi` wybiera jeden tryb). Dla każdego trybu uruchamia ISO z pustym dyskiem 36 GiB i przechodzi interaktywny kreator: wybór dysku, dane konta, potwierdzenia `ERASE` i `INSTALL`, hasło i odmowa restartu. Następnie uruchamia system z dysku, loguje się i sprawdza usługi oraz brak guide i instalatorów. Wymaga `qemu-system-x86` i `ovmf`. Konsola szeregowa (kernel i `serial-getty@ttyS0`) jest włączana w systemie docelowym wyłącznie przez test. Logi trafiają do `out/vm-install-*.log`, a raport `out/VM-INSTALL-TESTS.txt` jest zapisywany tylko po sukcesie wszystkich wybranych trybów. Nie testuje szyfrowania, dual boot ani rzeczywistego sprzętu.
 
 Przed uznaniem obrazu za gotowy sprawdź:
 
@@ -125,7 +128,8 @@ Firmware i sterowniki otwarte pokrywają wiele urządzeń, ale nie wszystkie. Ko
 - `overlay/live/` — konto live, autologowanie i inicjalizacja kluczy pacmana.
 - `docs/GUIDE_PL.md` — gotowe polecenia i oczekiwane wyniki testów/instalacji.
 - `scripts/build.sh` — składanie profilu i kompilacja ISO przez Archiso.
-- `scripts/install.sh` — instalacja na zamontowany root.
+- `scripts/install.sh` — instalacja na zamontowany root; bez argumentów otwiera kreator.
+- `scripts/install-wizard.sh` — interaktywne przygotowanie całego dysku UEFI/BIOS.
 - `scripts/vm-smoke.py` — test sesji live w VM BIOS/UEFI.
 - `scripts/vm-install.py` — test instalacji na pustym dysku VM i startu z dysku.
 - `.github/workflows/iso.yml` — walidacja CI, ręczna budowa ISO, opcjonalne testy VM/instalacji i publikacja wydania w repozytorium wydań.

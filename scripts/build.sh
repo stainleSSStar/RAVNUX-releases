@@ -34,9 +34,9 @@ rm -f profile/airootfs/etc/os-release
 mkdir -p profile/airootfs/usr/share/ravnux/root-overlay
 cp -a overlay/common/. profile/airootfs/usr/share/ravnux/root-overlay/
 install -Dm644 docs/GUIDE_PL.md profile/airootfs/usr/share/ravnux/guide-pl.md
-install -Dm644 docs/GUIDE_PL.md profile/airootfs/usr/share/ravnux/root-overlay/usr/share/ravnux/guide-pl.md
 install -Dm644 packages/system.txt profile/airootfs/usr/share/ravnux/system-packages.txt
 install -Dm755 scripts/install.sh profile/airootfs/usr/local/bin/ravnux-install
+install -Dm755 scripts/install-wizard.sh profile/airootfs/usr/local/bin/ravnux-setup
 cat packages/system.txt packages/live.txt | sort -u > profile/packages.x86_64
 # ISO settings are appended to the packaged profile to follow upstream bootmode changes.
 cat >> profile/profiledef.sh <<'EOF'
@@ -50,11 +50,11 @@ file_permissions=(
  ["/usr/local/bin/ravnux-keyring-init"]="0:0:755"
  ["/usr/local/bin/ravnux-guide"]="0:0:755"
  ["/usr/share/ravnux/root-overlay/usr/local/bin/ravnux-keyring-init"]="0:0:755"
- ["/usr/share/ravnux/root-overlay/usr/local/bin/ravnux-guide"]="0:0:755"
  ["/usr/local/bin/ravnux-desktop"]="0:0:755"
  ["/usr/share/ravnux/root-overlay/usr/local/bin/ravnux-desktop"]="0:0:755"
  ["/usr/share/ravnux/root-overlay/etc/sudoers.d/20-ravnux-wheel"]="0:0:440"
  ["/usr/local/bin/ravnux-install"]="0:0:755"
+ ["/usr/local/bin/ravnux-setup"]="0:0:755"
  ["/usr/local/bin/ravnux-live-setup"]="0:0:755"
  ["/etc/sudoers.d/10-ravnux-live"]="0:0:440"
  ["/etc/sudoers.d/20-ravnux-wheel"]="0:0:440"

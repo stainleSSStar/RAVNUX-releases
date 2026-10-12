@@ -55,6 +55,11 @@ class BuildPreparation(unittest.TestCase):
             localtime = profile / prefix / 'etc/localtime'
             self.assertTrue(localtime.is_symlink(), prefix)
             self.assertEqual(os.readlink(localtime), '/usr/share/zoneinfo/Europe/Warsaw')
+        for relative in ('usr/local/bin/ravnux-guide', 'usr/share/applications/ravnux-guide.desktop',
+                         'usr/share/ravnux/guide-pl.md', 'usr/local/bin/ravnux-setup',
+                         'usr/local/bin/ravnux-install'):
+            self.assertTrue((profile / 'airootfs' / relative).is_file(), relative)
+            self.assertFalse((profile / 'airootfs/usr/share/ravnux/root-overlay' / relative).exists(), relative)
         source = self.repo / 'overlay/common/usr/share/pixmaps/ravnux-logo.png'
         for prefix in ('airootfs', 'airootfs/usr/share/ravnux/root-overlay'):
             self.assertEqual(source.read_bytes(), (profile / prefix / 'usr/share/pixmaps/ravnux-logo.png').read_bytes())

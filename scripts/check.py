@@ -26,6 +26,7 @@ assert {'xlibre-xserver', 'xlibre-input-libinput'} <= set(system)
 assert not set(system) & {'xorg-server', 'xf86-input-libinput'}
 assert '[xlibre-stable]' in (root / 'overlay/common/etc/pacman.conf').read_text()
 assert not set(system) & {'firefox', 'chromium', 'archinstall', 'libreoffice-fresh', 'git', 'base-devel'}
+assert not set(system) & {'arch-install-scripts', 'mkinitcpio-archiso', 'nano', 'less', 'alsa-utils', 'vulkan-intel', 'vulkan-radeon'}
 assert {'fish', 'pipewire-pulse', 'wireplumber', 'linux-firmware', 'sof-firmware', 'xfce4-session', 'networkmanager'} <= set(system)
 assert not (root / 'overlay/common/etc/sudoers.d/10-ravnux-live').exists()
 assert not (root / 'overlay/common/etc/lightdm/lightdm.conf.d/50-ravnux-live.conf').exists()
@@ -54,6 +55,9 @@ artwork = {
 }
 for path, magic in artwork.items():
     assert (root / 'overlay/common' / path).read_bytes().startswith(magic), path
+for relative in ('usr/local/bin/ravnux-guide', 'usr/share/applications/ravnux-guide.desktop'):
+    assert (root / 'overlay/live' / relative).is_file(), relative
+    assert not (root / 'overlay/common' / relative).exists(), relative
 guide = (root / 'docs/GUIDE_PL.md').read_text()
 for code in re.findall(r'```(?:sh|bash)\n(.*?)```', guide, re.S):
     subprocess.run(['bash', '-n'], input=code, text=True, check=True)
@@ -66,7 +70,11 @@ if profile.exists():
     assert not (profile / 'airootfs/etc/systemd/system/multi-user.target.wants/sshd.service').exists()
     assert (profile / 'airootfs/etc/pacman.conf').read_text() == (root / 'overlay/common/etc/pacman.conf').read_text()
     assert (profile / 'airootfs/usr/share/ravnux/guide-pl.md').read_text() == guide
-    assert (profile / 'airootfs/usr/share/ravnux/root-overlay/usr/share/ravnux/guide-pl.md').read_text() == guide
+    for relative in ('usr/share/ravnux/guide-pl.md', 'usr/local/bin/ravnux-guide',
+                     'usr/share/applications/ravnux-guide.desktop', 'usr/local/bin/ravnux-setup',
+                     'usr/local/bin/ravnux-install'):
+        assert (profile / 'airootfs' / relative).exists(), relative
+        assert not (profile / 'airootfs/usr/share/ravnux/root-overlay' / relative).exists(), relative
     for path in artwork:
         source = (root / 'overlay/common' / path).read_bytes()
         assert (profile / 'airootfs' / path).read_bytes() == source, path
