@@ -5,6 +5,7 @@
   <property name="IconThemeName" type="string" value="Adwaita"/>
  </property>
  <property name="Gtk" type="empty">
+  <property name="ApplicationPreferDarkTheme" type="bool" value="true"/>
   <property name="FontName" type="string" value="DejaVu Sans 10"/>
  </property>
 </channel>

@@ -11,6 +11,13 @@ Run sudo ravnux-install with no arguments (or sudo ravnux-setup) for the disk se
 HELP
 }
 fail() { echo "Error: $*" >&2; exit 1; }
+validate_username() {
+ local username=$1
+ [[ $username =~ ^[a-z_][a-z0-9_-]{0,31}$ && $username != root && $username != ravnux ]] || fail 'Invalid username (root and ravnux are reserved).'
+ # Account creation happens after pacstrap. Reject system/live account collisions
+ # before installing, and in the wizard before erasing the selected disk.
+ if getent passwd "$username" >/dev/null; then fail 'Username already exists; choose a new account name.'; fi
+}
 validate_target_files() {
  local target=$1 bios_disk=$2 entries
  # Reject redirected boot paths and existing files before any installation writes.
@@ -42,11 +49,11 @@ while (($#)); do
   *) fail "Unknown option: $1" ;;
  esac
 done
-[[ $EUID == 0 ]] || fail 'Run as root.'
 [[ $hostname =~ ^[a-zA-Z0-9]([a-zA-Z0-9-]{0,61}[a-zA-Z0-9])?$ ]] || fail 'Invalid hostname.'
-[[ $username =~ ^[a-z_][a-z0-9_-]{0,31}$ && $username != root && $username != ravnux ]] || fail 'Invalid username (root and ravnux are reserved).'
+validate_username "$username"
 [[ $timezone != /* && $timezone != *..* && -f /usr/share/zoneinfo/$timezone ]] || fail 'Invalid timezone.'
 [[ $target == /* && $target != / ]] || fail 'Target must be an absolute mount path other than /.'
+[[ $EUID == 0 ]] || fail 'Run as root.'
 target=$(realpath -e "$target")
 [[ $target != / && $target != /run/archiso* && $target != /boot* && $target != /home* ]] || fail 'Unsafe target path.'
 mountpoint -q "$target" || fail 'Target is not a mount point.'
@@ -77,7 +84,6 @@ read -r confirmation
 [[ $confirmation == INSTALL ]] || fail 'Cancelled.'
 mapfile -t packages < "$packages_file"
 packages+=(grub)
-[[ -n $bios_disk ]] || packages+=(efibootmgr)
 [[ $root_type != btrfs ]] || packages+=(btrfs-progs)
 systemctl start pacman-init.service
 # pacstrap -K creates a separate target keyring. Seed it before resolving

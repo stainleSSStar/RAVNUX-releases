@@ -1,4 +1,5 @@
 import os
+import platform
 from pathlib import Path
 import shutil
 import subprocess
@@ -8,6 +9,8 @@ import unittest
 ROOT = Path(__file__).resolve().parents[1]
 
 
+@unittest.skipUnless(platform.system() == 'Linux' and platform.machine() == 'x86_64',
+                     'Profile preparation requires an x86_64 Linux host and GNU tools')
 class BuildPreparation(unittest.TestCase):
     def setUp(self):
         self.tmp = tempfile.TemporaryDirectory()

@@ -18,6 +18,10 @@ on:
         description: Test CLI installation and disk boot in BIOS and UEFI
         type: boolean
         default: false
+      publish_release:
+        description: Publish the ISO to the releases repository
+        type: boolean
+        default: true
 permissions:
   contents: read
 defaults:
@@ -81,20 +85,23 @@ jobs:
           # Free the space the airootfs work tree occupies; the disk image needs it.
           sudo rm -rf work
           python3 scripts/vm-install.py --timeout 3600 out/*.iso 2>&1 | tee ci-logs/vm-install.log
-      - name: Upload ISO, checksums and package manifests
+      - name: Upload small diagnostic artifacts
         if: always() && steps.build.outcome == 'success'
         continue-on-error: true
         uses: actions/upload-artifact@v4
         with:
           name: RAVNUX-x86_64-${{ github.run_number }}
           path: |
-            out/
+            out/*.txt
+            out/*.md
+            out/*.log
+            out/SHA256SUMS
             ci-logs/
           if-no-files-found: warn
           compression-level: 0
           retention-days: 14
       - name: Publish ISO to the public releases repository
-        if: always() && steps.build.outcome == 'success'
+        if: always() && inputs.publish_release && steps.build.outcome == 'success'
         env:
           GH_TOKEN: ${{ secrets.RELEASE_TOKEN }}
           RELEASE_REPO: stainleSSStar/RAVNUX-releases
@@ -131,3 +138,34 @@ jobs:
             fi
           done
           exit "$failures"
+  desktop-preview:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 10
+    steps:
+      - uses: actions/checkout@v4
+      - name: Install preview tools (runner only)
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y --no-install-recommends xvfb xauth dbus-x11 python3-gi gir1.2-gtk-3.0 gir1.2-gtk-4.0 xfwm4 xfce4-panel xfce4-settings xfdesktop4 xfce4-terminal thunar xfce4-notifyd libnotify-bin wmctrl fish fonts-dejavu adwaita-icon-theme
+      - name: Validate GTK4 theme syntax
+        run: |
+          xvfb-run python3 - <<'PY'
+          import gi
+          gi.require_version('Gtk', '4.0')
+          from gi.repository import Gtk
+          errors = []
+          provider = Gtk.CssProvider()
+          provider.connect('parsing-error', lambda provider, section, error: errors.append(str(error)))
+          provider.load_from_path('overlay/common/usr/share/themes/RAVNUX/gtk-4.0/gtk.css')
+          assert not errors, errors
+          PY
+      - name: Render actual XFCE widgets and terminal
+        run: |
+          dbus-run-session -- xvfb-run -s '-screen 0 1440x900x24 +extension COMPOSITE' python3 scripts/preview-desktop.py --output ci-logs/desktop.png
+      - name: Upload desktop preview
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: RAVNUX-desktop-preview
+          path: ci-logs/
+          retention-days: 7

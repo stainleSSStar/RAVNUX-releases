@@ -1,0 +1,26 @@
+/* GTK4 applications such as pavucontrol use the same palette. GTK4 supplies
+ * its own base widget styles; never import GTK3 resources into this toolkit. */
+@define-color theme_bg_color #24152f;
+@define-color theme_fg_color #eadcf2;
+@define-color theme_base_color #180e24;
+@define-color theme_text_color #eadcf2;
+@define-color theme_selected_bg_color #9d3ac2;
+@define-color theme_selected_fg_color #fff3fc;
+@define-color borders #50305f;
+@define-color accent_bg_color #9d3ac2;
+@define-color accent_fg_color #fff3fc;
+@define-color accent_color #f472b6;
+window, .background { background-color: #24152f; color: #eadcf2; }
+headerbar, toolbar, notebook > header { background: #301b3e; color: #eadcf2; border-color: #50305f; }
+.view, textview text, entry, spinbutton, list { background-color: #180e24; color: #eadcf2; }
+button { background-image: none; background-color: #382144; color: #eadcf2; border-color: #50305f; box-shadow: none; }
+button:hover { background-color: #50305f; }
+button:checked, button:active, selection, row:selected { background-color: #9d3ac2; color: #fff3fc; }
+button:disabled { background-color: #24152f; color: #a084af; }
+popover > contents, tooltip { background-color: #301b3e; color: #fff3fc; border-color: #633274; }
+check:checked, radio:checked, switch:checked { background-color: #9d3ac2; border-color: #d65cc8; color: #fff3fc; }
+scale highlight, progressbar progress { background-image: none; background-color: #d65cc8; border-color: #d65cc8; }
+scale trough, progressbar trough { background-color: #180e24; border-color: #50305f; }
+scale slider { background-color: #eadcf2; border-color: #d65cc8; }
+scrollbar slider { background-color: #633274; }
+*:focus { outline-color: #f472b6; }

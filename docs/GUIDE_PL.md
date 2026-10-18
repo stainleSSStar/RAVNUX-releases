@@ -196,3 +196,9 @@ https://docs.xfce.org/xfce/xfwm4/wmtweaks
 Jeśli coś przestanie działać, zanotuj czynność, po której pojawił się problem,
 i dokładny komunikat błędu. Diagnostykę CLI można wtedy dobrać do konkretnej
 usterki; nie musisz wykonywać testów sprzętu ani zbierać raportów przed instalacją.
+
+### Domyślny wygląd
+
+Terminal ma zielony tekst i purpurowe tło o kryciu 88% (12% przezroczystości). Kolory poleceń Fish pozostają zielone, ścieżka i znak zachęty mają purpurowo-różowe akcenty. Zmienisz je w ustawieniach terminala; przezroczystość wymaga włączonego kompozytora XFWM. Motyw RAVNUX obejmuje GTK2, GTK3, GTK4 oraz powiadomienia XFCE.
+
+Ustawienia z `/etc/skel` dotyczą nowych kont. Samo zastąpienie plików motywu na istniejącej instalacji nie zmienia prywatnych ustawień terminala ani pulpitu. Terminal 1.2 używa kanału `xfce4-terminal` w Xfconf, starsze wersje pliku `~/.config/xfce4/terminal/terminalrc`.

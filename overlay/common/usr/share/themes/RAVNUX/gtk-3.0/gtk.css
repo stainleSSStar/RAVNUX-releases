@@ -1,25 +1,82 @@
 @import url("resource:///org/gtk/libgtk/theme/Adwaita/gtk-contained-dark.css");
-@define-color theme_selected_bg_color #9d3ac2;
-@define-color theme_selected_fg_color #fff3fc;
+
+/* One palette for GTK, XFWM, the panel and the greeter. Keep Adwaita's
+ * geometry, accessibility states and widget assets; no theme engine needed. */
 @define-color theme_bg_color #24152f;
 @define-color theme_fg_color #eadcf2;
 @define-color theme_base_color #180e24;
 @define-color theme_text_color #eadcf2;
+@define-color theme_selected_bg_color #9d3ac2;
+@define-color theme_selected_fg_color #fff3fc;
+@define-color theme_unfocused_bg_color #24152f;
+@define-color theme_unfocused_fg_color #bda8c9;
+@define-color theme_unfocused_base_color #180e24;
+@define-color theme_unfocused_text_color #bda8c9;
 @define-color theme_unfocused_selected_bg_color #633274;
-window, .background { background-color: #24152f; color: #eadcf2; }
-headerbar { background-image: none; background-color: #301b3e; }
-button:checked, selection, row:selected { background-image: none; background-color: #9d3ac2; color: #fff3fc; }
-*:focus { outline-color: #f472b6; }
-scale highlight, progressbar progress { background-image: none; background-color: #d65cc8; border-color: #d65cc8; }
+@define-color theme_unfocused_selected_fg_color #fff3fc;
+@define-color borders #50305f;
+@define-color unfocused_borders #3d264a;
+@define-color insensitive_bg_color #24152f;
+@define-color insensitive_fg_color #a084af;
+@define-color insensitive_base_color #201229;
+@define-color warning_color #efc77b;
+@define-color error_color #fb7185;
+@define-color success_color #a6f28a;
+@define-color link_color #f9a8d4;
+@define-color link_visited_color #c4b5fd;
 
-/* Quiet surfaces, pink focus accents and more breathing room. */
-headerbar { border-bottom: 1px solid #50305f; box-shadow: none; }
-button { border-radius: 6px; padding: 6px 10px; }
-button:hover { background-image: none; background-color: #452854; }
-entry { border-radius: 6px; border-color: #50305f; }
+window, .background, dialog { background-color: @theme_bg_color; color: @theme_fg_color; }
+headerbar, toolbar, menubar, .primary-toolbar {
+ background-image: none; background-color: #301b3e; color: @theme_fg_color;
+ border-color: @borders; box-shadow: none;
+}
+headerbar { border-bottom: 1px solid @borders; }
+.view, treeview.view, textview text, iconview, list, entry, spinbutton:not(.vertical), combobox box.linked {
+ background-color: @theme_base_color; color: @theme_text_color;
+}
+.sidebar, .sidebar .view, .sidebar list, stacksidebar, placessidebar {
+ background-color: #201229; color: @theme_fg_color;
+}
+button {
+ background-image: none; background-color: #382144; color: @theme_fg_color;
+ border-color: @borders; border-radius: 6px; padding: 6px 10px;
+ text-shadow: none; box-shadow: none;
+}
+button:hover, button:backdrop:hover { background-color: #50305f; color: #fff3fc; }
+button:active, button:checked, button.suggested-action {
+ background-image: none; background-color: @theme_selected_bg_color; color: @theme_selected_fg_color;
+ border-color: #d65cc8;
+}
+button.destructive-action { background-color: #7d294c; border-color: #fb7185; color: #fff3fc; }
+button:disabled { background-color: @insensitive_bg_color; color: @insensitive_fg_color; border-color: @unfocused_borders; }
+button:backdrop { background-color: #301b3e; color: @theme_unfocused_fg_color; }
+entry { border-radius: 6px; border-color: @borders; }
 entry:focus { border-color: #f472b6; box-shadow: inset 0 0 0 1px #f472b6; }
-menu { border: 1px solid #50305f; border-radius: 8px; padding: 6px; }
-menuitem { border-radius: 4px; padding: 6px 10px; }
-menuitem:hover { background-color: #633274; color: #fff3fc; }
-.xfce4-panel button { border-radius: 5px; margin: 3px; padding: 4px 8px; }
+*:focus { outline-color: #f472b6; }
+selection, .view:selected, .view:selected:focus, row:selected, flowboxchild:selected, .sidebar row:selected {
+ background-color: @theme_selected_bg_color; color: @theme_selected_fg_color;
+}
+.view:selected:backdrop, row:selected:backdrop { background-color: #633274; color: #fff3fc; }
+menu, .menu, popover, popover.background {
+ background-color: #24152f; color: @theme_fg_color; border: 1px solid @borders; border-radius: 8px; padding: 6px;
+}
+menuitem, modelbutton { border-radius: 4px; padding: 6px 10px; }
+menuitem:hover, modelbutton:hover { background-color: #633274; color: #fff3fc; }
+menuitem:disabled { color: @insensitive_fg_color; }
+notebook > header { background-color: #201229; border-color: @borders; }
+notebook > header tab:checked { background-color: #382144; box-shadow: inset 0 -2px #f472b6; }
+check:checked, check:indeterminate, radio:checked, switch:checked {
+ background-image: none; background-color: #9d3ac2; border-color: #d65cc8; color: #fff3fc;
+}
+scale trough, progressbar trough { background-color: #180e24; border-color: @borders; }
+scale highlight, progressbar progress { background-image: none; background-color: #d65cc8; border-color: #d65cc8; }
+scale slider { background-image: none; background-color: #eadcf2; border-color: #d65cc8; }
+scrollbar slider { background-color: #633274; }
+scrollbar slider:hover { background-color: #9d3ac2; }
+separator { background-color: @borders; }
+tooltip, tooltip.background { background-color: #301b3e; color: #fff3fc; border: 1px solid #633274; }
+.xfce4-panel { color: #eadcf2; }
+.xfce4-panel button { background-color: transparent; border-color: transparent; border-radius: 5px; margin: 3px; padding: 4px 8px; }
+.xfce4-panel button:hover { background-color: #452854; }
 .xfce4-panel button:checked { background-color: #633274; border-bottom: 2px solid #f472b6; }
+#desktop-view { color: #fff3fc; }
