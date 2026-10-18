@@ -29,7 +29,7 @@ cp -a "$releng/airootfs/etc/mkinitcpio.conf.d" profile/airootfs/etc/
 cp -a overlay/common/. profile/airootfs/
 cp overlay/common/etc/pacman.conf profile/pacman.conf
 cp -a overlay/live/. profile/airootfs/
-# filesystem owns /etc/os-release: apply live branding at startup instead.
+# Apply live identity at startup, while retaining it in the installed overlay.
 rm -f profile/airootfs/etc/os-release
 mkdir -p profile/airootfs/usr/share/ravnux/root-overlay
 cp -a overlay/common/. profile/airootfs/usr/share/ravnux/root-overlay/
@@ -47,6 +47,8 @@ iso_publisher="RAVNUX <https://github.com/stainleSSStar/RAVNUX>"
 iso_application="RAVNUX XFCE Live and Installer"
 airootfs_image_tool_options=('-comp' 'zstd' '-Xcompression-level' '15' '-b' '1M')
 file_permissions=(
+ ["/etc/sudoers.d"]="0:0:750"
+ ["/usr/share/ravnux/root-overlay/etc/sudoers.d"]="0:0:750"
  ["/usr/local/bin/ravnux-keyring-init"]="0:0:755"
  ["/usr/local/bin/ravnux-guide"]="0:0:755"
  ["/usr/share/ravnux/root-overlay/usr/local/bin/ravnux-keyring-init"]="0:0:755"
@@ -100,6 +102,7 @@ printf 'SOURCE_DATE_EPOCH=%s\n' "$SOURCE_DATE_EPOCH" > out/build-info.txt
 mkarchiso -v -w "$PWD/work" -o "$PWD/out" "$PWD/profile"
 cp docs/GUIDE_PL.md out/GUIDE_PL.md
 cp docs/AUDIT_PL.md out/AUDIT_PL.md
+cp docs/PRODUCTION_AUDIT_PL.md out/PRODUCTION_AUDIT_PL.md
 cp work/x86_64/airootfs/usr/share/ravnux/system-packages.txt out/requested-system-packages.txt
 cp work/iso/arch/pkglist.x86_64.txt out/live-packages.txt
 if grep -Eq '^xorg-server(-| )|^xf86-input-libinput ' out/live-packages.txt; then

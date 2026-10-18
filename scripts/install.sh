@@ -84,6 +84,9 @@ read -r confirmation
 [[ $confirmation == INSTALL ]] || fail 'Cancelled.'
 mapfile -t packages < "$packages_file"
 packages+=(grub)
+# grub-install --no-nvram does not call this, but grub-mkconfig's EFI firmware
+# and BootNext menu generation does. Keep those UEFI functions available.
+[[ -n $bios_disk ]] || packages+=(efibootmgr)
 [[ $root_type != btrfs ]] || packages+=(btrfs-progs)
 systemctl start pacman-init.service
 # pacstrap -K creates a separate target keyring. Seed it before resolving
@@ -95,6 +98,7 @@ pacman-key --gpgdir "$target_keyring" --populate archlinux
 ravnux-keyring-init /usr/share/ravnux/keyring/xlibre-archlinux.asc "$target_keyring"
 pacstrap -C /etc/pacman.conf -K "$target" "${packages[@]}"
 cp -a --remove-destination "$overlay/." "$target/"
+chmod 0750 "$target/etc/sudoers.d"
 chmod 0440 "$target/etc/sudoers.d/20-ravnux-wheel"
 genfstab -U "$target" > "$target/etc/fstab"
 arch-chroot "$target" /bin/bash -s -- "$hostname" "$username" "$timezone" <<'CHROOT'

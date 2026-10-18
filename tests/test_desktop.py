@@ -34,8 +34,11 @@ if '-l' in a:
     print('\\n'.join(s))
 else:
     key = a[a.index('-p') + 1]
-    s[key] = a[a.index('-s') + 1]
-    p.write_text(json.dumps(s))
+    if '-s' in a:
+        s[key] = a[a.index('-s') + 1]
+        p.write_text(json.dumps(s))
+    else:
+        print(s[key])
 ''')
             query.chmod(0o755)
             xrandr = tmp / 'xrandr'
@@ -63,6 +66,14 @@ printf '%s\\n' 'Screen 0: minimum 8 x 8, current 3840 x 1080, maximum 32767 x 32
             self.assertEqual(state[prefix + '/image-style'], '5')
         self.assertFalse(any('monitorDP-1/' in key for key in state))
         self.assertEqual(state['/backdrop/single-workspace-mode'], 'true')
+
+    def test_replaces_xfce_default_created_before_first_login_helper(self):
+        key = '/backdrop/screen0/monitoreDP-1/workspace0/last-image'
+        result, state, marked, wallpaper = self.run_desktop({key: '/usr/share/backgrounds/xfce/xfce-blue.jpg'})
+        self.assertEqual(result.returncode, 0, result.stderr)
+        self.assertEqual(state[key], wallpaper)
+        self.assertEqual(state['/backdrop/single-workspace-mode'], 'true')
+        self.assertTrue(marked)
 
     def test_preserves_user_wallpaper_and_workspace_preferences(self):
         key = '/backdrop/screen0/monitoreDP-1/workspace0/last-image'

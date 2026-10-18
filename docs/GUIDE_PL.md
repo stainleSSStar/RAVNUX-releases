@@ -179,7 +179,7 @@ Repozytorium stable XLibre i klucze podpisów są już skonfigurowane przez inst
   Kompozytor XFWM jest domyślnie włączony. Możesz go wyłączyć w tym miejscu,
   jeśli chcesz zrezygnować z efektów.
 
-Panel ma subtelnie przezroczyste tło, a terminal domyślnie 90% krycia.
+Panel ma subtelnie przezroczyste tło, a terminal domyślnie 88% krycia.
 Nie jest potrzebny dodatkowy kompozytor.
 
 ## 8. Gdzie wrócić po pomoc

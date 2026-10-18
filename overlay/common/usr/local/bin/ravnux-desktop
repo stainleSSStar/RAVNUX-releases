@@ -7,7 +7,8 @@ marker="$HOME/.config/ravnux/wallpaper-initialized"
 
 # XFCE 4.20 can render its default without creating any last-image properties.
 # Use XRandR connector names, as xfdesktop does, instead of waiting for those
-# properties to appear. Keep existing user choices, including before the marker.
+# properties to appear. Preserve custom choices; on the first login XFCE may
+# already have written its own packaged default before this helper starts.
 for _ in {1..40}; do
  if properties=$(xfconf-query -c xfce4-desktop -l) && outputs=$(xrandr --query); then
   monitors=$(printf '%s\n' "$outputs" | awk '
@@ -20,12 +21,25 @@ for _ in {1..40}; do
    # workspace preferences if the user has already configured a background.
    # Read the full list: grep -q can close a large pipe early, and pipefail
    # would then mistake printf's SIGPIPE for a missing property.
-   if ! printf '%s\n' "$properties" | grep '/last-image$' >/dev/null; then
+   custom_background=false
+   while IFS= read -r existing; do
+    [[ -n $existing ]] || continue
+    current=$(xfconf-query -c xfce4-desktop -p "$existing")
+    case "$current" in
+     ''|/usr/share/backgrounds/xfce/*) ;;
+     *) custom_background=true ;;
+    esac
+   done < <(printf '%s\n' "$properties" | grep '/last-image$' || true)
+   if [[ $custom_background == false ]]; then
     xfconf-query -c xfce4-desktop -p /backdrop/single-workspace-number -n -t int -s 0
     xfconf-query -c xfce4-desktop -p /backdrop/single-workspace-mode -n -t bool -s true
    fi
    while IFS= read -r property; do
-    if ! printf '%s\n' "$properties" | grep -Fx "$property/last-image" >/dev/null; then
+    current=''
+    if printf '%s\n' "$properties" | grep -Fx "$property/last-image" >/dev/null; then
+     current=$(xfconf-query -c xfce4-desktop -p "$property/last-image")
+    fi
+    if [[ -z $current || $current == /usr/share/backgrounds/xfce/* ]]; then
      xfconf-query -c xfce4-desktop -p "$property/image-style" -n -t int -s 5
      xfconf-query -c xfce4-desktop -p "$property/last-image" -n -t string -s "$wallpaper"
     fi

@@ -25,6 +25,12 @@ class SerialChecks(unittest.TestCase):
             console.expect(pattern)
         self.assertEqual(console.connection.recv.call_count, 1)
 
+    def test_framed_prompt_does_not_match_quoted_command_text(self):
+        console = self.console([b"sudo -p 'RAVNUX_SUDO_PASSWORD: ' bash\r\n",
+                                b'lecture\r\nRAVNUX_SUDO_PASSWORD: '])
+        console.expect(b'\r\nRAVNUX_SUDO_PASSWORD: ')
+        self.assertEqual(console.connection.recv.call_count, 2)
+
     def test_split_marker_and_socket_timeout(self):
         console = self.console([socket.timeout(), b'RAVNUX_', b'VM_OK'])
         console.expect(b'RAVNUX_VM_OK')
@@ -36,6 +42,14 @@ class SerialChecks(unittest.TestCase):
     def test_timeout_fails(self):
         with self.assertRaisesRegex(RuntimeError, 'did not receive'):
             self.console([], timeout=-1).expect(b'OK')
+
+    def test_scoped_prompt_timeout_does_not_change_global_deadline(self):
+        console = self.console([], timeout=100)
+        original = console.deadline
+        with self.assertRaisesRegex(RuntimeError, 'did not receive'):
+            console.expect(b'PASSWORD:', timeout=-1)
+        self.assertEqual(console.deadline, original)
+        console.connection.recv.assert_not_called()
 
     def test_guest_failure_fails_immediately(self):
         with self.assertRaisesRegex(RuntimeError, 'Guest validation failed'):

@@ -14,7 +14,7 @@ Minimalistyczny system **x86_64 oparty na Arch Linux**, z XFCE na XLibre, Fish i
 - Mesa/OpenGL: otwarte sterowniki grafiki Intel/AMD oraz Nouveau dla obsługiwanych kart NVIDIA. Bez własnościowego sterownika NVIDIA, dodatkowych sterowników Vulkan i pakietów AUR.
 - LightDM, własny motyw GTK/Xfwm, spójne purpurowo-różowe GTK2/GTK3/GTK4 i powiadomienia; terminal/Fish z zielonym tekstem na purpurowym tle o kryciu 88%. Domyślna tapeta to cyberpunkowe miasto z purpurowymi neonami; logo to różowa litera R na purpurowym tle. Oba pliki są dostarczane na ISO oraz w systemie docelowym, bez pobierania przy logowaniu.
 
-Bez preinstalowanej przeglądarki, pakietu biurowego, gier, sklepu z aplikacjami, helpera AUR, serwera SSH i środowiska programistycznego. Pakiety `packages/system.txt` stanowią zestaw docelowy; pacman instaluje także ich wymagane zależności. GRUB oraz ewentualnie btrfs-progs są dodawane przez instalator jako narzędzia rozruchu/filesystemu.
+Bez preinstalowanej przeglądarki, pakietu biurowego, gier, sklepu z aplikacjami, helpera AUR, serwera SSH i środowiska programistycznego. Pakiety `packages/system.txt` stanowią zestaw docelowy; pacman instaluje także ich wymagane zależności. GRUB, przy UEFI efibootmgr, oraz ewentualnie btrfs-progs są dodawane przez instalator jako narzędzia rozruchu/filesystemu.
 
 To Arch rolling release korzystający z repozytoriów **core/extra** i dodatkowego **xlibre-stable**, bez testing i beta. Brak mechanizmu automatycznego aktualizowania systemu. Budowanie w różnych dniach może pobrać różne wersje pakietów; nie jest to zamrożony ani bitowo powtarzalny obraz.
 
@@ -91,6 +91,8 @@ sudo python3 -m unittest discover -s tests -v
 Serwer `xorg-server` i sterownik `xf86-input-libinput` zostały zastąpione przez `xlibre-xserver` i `xlibre-input-libinput`. Klucz podpisujący XLibre jest dołączony i sprawdzany według pełnego fingerprintu `0C92313001CFCA27627B9098B97F7C613F359424`. Podpisy pakietów pozostają wymagane. Klienci i biblioteki X11 mogą zachować nazwy `xorg-*`/`libX*`; nie są serwerem Xorg.
 
 CI dodatkowo renderuje rzeczywisty panel XFCE, Thunar, terminal i kontrolki GTK3 pod Xvfb; PNG jest dostępny jako artefakt `RAVNUX-desktop-preview`; przy przekroczonym limicie magazynu jego kopia Base64 i log renderowania trafiają do logu zadania. Narzędzia podglądu są instalowane tylko na runnerze, bez dodawania pakietów do dystrybucji. Testy VM sprawdzają również motyw, zielony tekst i tryb przezroczystości terminala.
+
+Dodatkowy audyt produkcyjny: [PRODUCTION_AUDIT_PL.md](docs/PRODUCTION_AUDIT_PL.md). Opcja workflow `production_audit` sprawdza też rzeczywiste logowanie do LightDM/XFCE, autoryzację PolicyKit, blokadę ekranu, hasło sudo, usługi audio, reinstalację `filesystem`/kernela i kolejny rozruch. `existing_iso_tag` pozwala sprawdzić dokładny opublikowany obraz po weryfikacji SHA256SUMS, bez nowej budowy (wymaga wyłączenia publikacji).
 
 Kontrole źródeł weryfikują składnię Bash, XML, format konfiguracji, zestaw pakietów i oddzielenie sesji live od systemu docelowego. Proces budowania dodatkowo sprawdza dostępność wszystkich żądanych pakietów w bazie pacmana i buduje ISO. Nie zastępuje to testu bootowania ani instalacji.
 

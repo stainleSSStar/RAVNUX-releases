@@ -41,11 +41,15 @@ Wszystkie zmiany wyglądu są plikami CSS/XML/SVG/konfiguracji. Mały motyw
 ikon RAVNUX zmienia foldery i katalog domowy na purpurowo-różowe, dziedzicząc
 pozostałe ikony z Adwaita; nie wymaga dodatkowych pakietów.
 
-Usunięto `efibootmgr` z dodatków live oraz z instalacji UEFI: RAVNUX używa
-`grub-install --removable --no-nvram`, więc nie zapisuje wpisów NVRAM i nie
-potrzebuje tego narzędzia. To rzeczywiste ograniczenie zestawu żądanego przez
-instalator; dokładną końcową liczbę i rozmiar pakietów ustala pacman podczas
-budowy. Nie utożsamiamy liczby wierszy manifestu z liczbą pakietów na dysku.
+Z dodatków live usunięto `efibootmgr`; skrypty live go nie wywołują. W r64
+pominięto go także w systemie docelowym UEFI, ponieważ `grub-install` działa
+z `--removable --no-nvram`. Ponowny audyt wykazał jednak, że `grub-mkconfig`
+używa go do dodatkowych pozycji menu EFI/BootNext. Pakiet wrócił więc jako
+warunkowy składnik instalacji UEFI; BIOS go nie otrzymuje. Zachowanie wszystkich
+funkcji ma pierwszeństwo przed samą liczbą pakietów.
+
+Dokładną końcową liczbę i rozmiar pakietów ustala pacman podczas budowy.
+Nie utożsamiamy liczby wierszy manifestu z liczbą pakietów na dysku.
 
 Zachowane celowo:
 
