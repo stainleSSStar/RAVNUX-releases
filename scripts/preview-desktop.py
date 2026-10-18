@@ -34,6 +34,7 @@ with tempfile.TemporaryDirectory(prefix='ravnux-preview-') as directory:
                       XDG_CACHE_HOME=str(home / '.cache'), GTK_THEME='RAVNUX')
     import gi
     gi.require_version('Gtk', '3.0')
+    gi.require_version('Gdk', '3.0')
     from gi.repository import Gdk, GLib, Gtk
 
     errors = []
