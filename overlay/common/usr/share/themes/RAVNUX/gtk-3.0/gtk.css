@@ -99,3 +99,6 @@ entry selection, entry selection:focus, textview text selection, textview text s
 entry selection:backdrop, textview text selection:backdrop {
  background-color: #633274; color: #fff3fc;
 }
+statusbar, statusbar:backdrop, .statusbar, .statusbar:backdrop {
+ background-color: #301b3e; color: @theme_fg_color;
+}
