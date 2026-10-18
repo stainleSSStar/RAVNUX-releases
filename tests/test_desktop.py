@@ -10,7 +10,7 @@ ROOT = Path(__file__).resolve().parents[1]
 
 
 class DesktopInitialization(unittest.TestCase):
-    def run_desktop(self, existing=None, fail=False, initialized=False):
+    def run_desktop(self, existing=None, fail=False, initialized=False, reload_fail=False):
         with tempfile.TemporaryDirectory() as directory:
             tmp = Path(directory)
             wallpaper = tmp / 'city.jpg'
@@ -46,6 +46,9 @@ else:
 printf '%s\\n' 'Screen 0: minimum 8 x 8, current 3840 x 1080, maximum 32767 x 32767' 'eDP-1 connected primary 1920x1080+0+0' 'HDMI-1 connected 1920x1080+1920+0' 'DP-1 disconnected'
 ''')
             xrandr.chmod(0o755)
+            desktop = tmp / 'xfdesktop'
+            desktop.write_text('#!/bin/sh\n[ "$1" = --reload ] && [ "$TEST_RELOAD_FAIL" = 0 ]\n')
+            desktop.chmod(0o755)
             sleep = tmp / 'sleep'
             sleep.write_text('#!/bin/sh\nexit 0\n')
             sleep.chmod(0o755)
@@ -53,7 +56,8 @@ printf '%s\\n' 'Screen 0: minimum 8 x 8, current 3840 x 1080, maximum 32767 x 32
             script = script.replace('/usr/share/backgrounds/ravnux/cyberpunk-city.jpg', str(wallpaper))
             result = subprocess.run(['bash'], input=script, text=True, capture_output=True,
                                     env=dict(os.environ, HOME=str(tmp), TEST_STATE=str(state),
-                                             TEST_FAIL=str(int(fail)), PATH=f'{tmp}:' + os.environ['PATH']))
+                                             TEST_FAIL=str(int(fail)), TEST_RELOAD_FAIL=str(int(reload_fail)),
+                                             PATH=f'{tmp}:' + os.environ['PATH']))
             return result, json.loads(state.read_text()), marker.exists(), str(wallpaper)
 
     def test_fresh_profile_initializes_both_active_monitors(self):
@@ -88,6 +92,11 @@ printf '%s\\n' 'Screen 0: minimum 8 x 8, current 3840 x 1080, maximum 32767 x 32
         self.assertNotEqual(result.returncode, 0)
         self.assertFalse(marked)
         self.assertIn('initialization failed', result.stderr)
+
+    def test_unavailable_desktop_does_not_mark_initialization_complete(self):
+        result, _, marked, _ = self.run_desktop(reload_fail=True)
+        self.assertNotEqual(result.returncode, 0)
+        self.assertFalse(marked)
 
     def test_large_property_list_preserves_user_wallpaper_and_workspace_mode(self):
         key = '/backdrop/screen0/monitoreDP-1/workspace0/last-image'

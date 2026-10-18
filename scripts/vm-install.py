@@ -179,6 +179,21 @@ def wait_window(console, connection, pattern, marker):
     console.expect(('\r\n' + marker + '\r\n').encode(), timeout=60)
 
 
+def verify_wallpaper_screenshot(path):
+    """Check rendered pixels, not just xfconf (which can disagree at login)."""
+    from PIL import Image, ImageChops, ImageOps, ImageStat
+    reference = Path(__file__).resolve().parents[1] / 'overlay/common/usr/share/backgrounds/ravnux/cyberpunk-city.jpg'
+    with Image.open(path) as screenshot, Image.open(reference) as wallpaper:
+        actual = screenshot.convert('RGB')
+        expected = ImageOps.fit(wallpaper.convert('RGB'), actual.size)
+        width, height = actual.size
+        # The test terminal and authentication dialog leave this area clear.
+        box = (int(width * .8), int(height * .2), width, int(height * .9))
+        error = sum(ImageStat.Stat(ImageChops.difference(actual.crop(box), expected.crop(box))).mean) / 3
+        if error > 12:
+            raise RuntimeError(f'Rendered wallpaper differs from RAVNUX reference: mean error {error:.2f}')
+
+
 def graphical_login(console, connection, monitor, out, prefix):
     qmp = vm_qmp.QMPClient(monitor)
     try:
@@ -232,6 +247,7 @@ def graphical_login(console, connection, monitor, out, prefix):
         connection.sendall(user_probe(check + 'gdbus call --session --dest org.xfce.ScreenSaver --object-path /org/xfce/ScreenSaver --method org.xfce.ScreenSaver.GetActive | grep -F false', 'RAVNUX_UNLOCKED').encode())
         console.expect(b'\r\nRAVNUX_UNLOCKED\r\n', timeout=30)
         qmp.screenshot(out / f'vm-install-{prefix}-desktop.png')
+        verify_wallpaper_screenshot(out / f'vm-install-{prefix}-desktop.png')
     except BaseException:
         path = out / f'vm-install-{prefix}-failure.png'
         try:

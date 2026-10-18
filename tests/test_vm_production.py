@@ -17,9 +17,24 @@ def module(name, filename):
 
 vmi = module('production_install', 'vm-install.py')
 qmp = module('production_qmp', 'vm-qmp.py')
+try:
+    from PIL import Image, ImageOps
+except ImportError:
+    Image = None
 
 
 class ProductionProbes(unittest.TestCase):
+    @unittest.skipIf(Image is None, 'Pillow is a CI image-test dependency')
+    def test_rendered_wallpaper_accepts_city_and_rejects_unrelated_background(self):
+        with tempfile.TemporaryDirectory() as directory:
+            path = Path(directory) / 'desktop.png'
+            with Image.open(ROOT / 'overlay/common/usr/share/backgrounds/ravnux/cyberpunk-city.jpg') as source:
+                ImageOps.fit(source, (1280, 800)).save(path)
+            vmi.verify_wallpaper_screenshot(path)
+            Image.new('RGB', (1280, 800), '#004b60').save(path)
+            with self.assertRaisesRegex(RuntimeError, 'Rendered wallpaper differs'):
+                vmi.verify_wallpaper_screenshot(path)
+
     def test_disk_controllers(self):
         for bus, expected in [('virtio', 'if=virtio'), ('sata', 'ide-hd,drive=systemdisk,bus=sata.0'),
                               ('nvme', 'nvme,drive=systemdisk,serial=RAVNUX-CI')]:

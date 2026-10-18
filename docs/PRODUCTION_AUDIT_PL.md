@@ -58,6 +58,11 @@ nowego obrazu o zmienionej zawartości.
    zastępuje teraz również domyślne obrazy z `/usr/share/backgrounds/xfce/`.
    Zachowuje własne zdjęcia użytkownika, a po inicjalizacji nie zmienia tapety.
    Test regresji obejmuje ten wyścig, a test instalacji kontroluje tapetę.
+   Kontrola zrzutów r91 wykryła ponadto zachowany w pamięci domyślny obraz
+   przy pierwszym logowaniu UEFI, mimo poprawnej wartości xfconf. Helper
+   jawnie odświeża teraz pulpit przed zapisaniem znacznika inicjalizacji.
+   Test VM porównuje również piksele odsłoniętej części tapety z obrazem
+   referencyjnym; sama ścieżka w konfiguracji nie wystarcza do PASS.
 
 ## Zakres i odtwarzalność testów
 

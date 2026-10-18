@@ -44,9 +44,14 @@ for _ in {1..40}; do
      xfconf-query -c xfce4-desktop -p "$property/last-image" -n -t string -s "$wallpaper"
     fi
    done <<< "$monitors"
-   mkdir -p "$(dirname "$marker")"
-   printf '%s\n' "$wallpaper" > "$marker"
-   exit 0
+   # During startup xfdesktop can retain an already rendered default even
+   # though xfconf contains the new image. Reload its backdrop cache before
+   # marking initialization complete; retry if the desktop is not ready yet.
+   if xfdesktop --reload; then
+    mkdir -p "$(dirname "$marker")"
+    printf '%s\n' "$wallpaper" > "$marker"
+    exit 0
+   fi
   fi
  fi
  sleep 0.5

@@ -47,7 +47,7 @@ jobs:
       - name: Install disk test tools
         run: |
           sudo apt-get update
-          sudo apt-get install -y parted dosfstools
+          sudo apt-get install -y parted dosfstools python3-pil
       - name: Validate source
         run: |
           python3 scripts/check.py
