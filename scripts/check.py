@@ -11,7 +11,7 @@ root = Path(__file__).resolve().parents[1]
 for path in list((root / 'scripts').glob('*.sh')) + list((root / 'overlay').rglob('*')):
     if path.is_file() and path.read_bytes().startswith(b'#!/usr/bin/env bash'):
         subprocess.run(['bash', '-n', str(path)], check=True)
-for path in (root / 'overlay').rglob('*.xml'):
+for path in list((root / 'overlay').rglob('*.xml')) + list((root / 'overlay').rglob('*.svg')):
     ET.parse(path)
 panel = ET.parse(root / 'overlay/common/etc/skel/.config/xfce4/xfconf/xfce-perchannel-xml/xfce4-panel.xml')
 rgba = panel.find('.//property[@name="background-rgba"]')

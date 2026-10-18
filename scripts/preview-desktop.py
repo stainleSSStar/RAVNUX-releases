@@ -24,6 +24,8 @@ with tempfile.TemporaryDirectory(prefix='ravnux-preview-') as directory:
     shutil.copytree(common / 'etc/skel', home, dirs_exist_ok=True)
     (home / '.themes').mkdir()
     (home / '.themes/RAVNUX').symlink_to(common / 'usr/share/themes/RAVNUX')
+    (home / '.icons').mkdir()
+    (home / '.icons/RAVNUX').symlink_to(common / 'usr/share/icons/RAVNUX')
     config = home / '.config/xfce4/xfconf/xfce-perchannel-xml'
     for path in config.glob('*.xml'):
         path.write_text(path.read_text().replace('/usr/share/pixmaps/ravnux-logo.png',

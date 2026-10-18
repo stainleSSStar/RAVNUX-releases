@@ -37,7 +37,9 @@ Testy nie stanowią gwarancji braku wszystkich błędów ani zgodności z każdy
 listą zależności. Usunięcie z niej np. `polkit`, `bluez` czy `udisks2` nie
 zmniejszyłoby liczby pakietów na dysku — wróciłyby jako wymagane zależności.
 Nie dodano silnika motywów, nowego kompozytora ani aplikacji do personalizacji.
-Wszystkie zmiany wyglądu są plikami CSS/XML/konfiguracji.
+Wszystkie zmiany wyglądu są plikami CSS/XML/SVG/konfiguracji. Mały motyw
+ikon RAVNUX zmienia foldery i katalog domowy na purpurowo-różowe, dziedzicząc
+pozostałe ikony z Adwaita; nie wymaga dodatkowych pakietów.
 
 Usunięto `efibootmgr` z dodatków live oraz z instalacji UEFI: RAVNUX używa
 `grub-install --removable --no-nvram`, więc nie zapisuje wpisów NVRAM i nie
