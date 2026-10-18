@@ -22,7 +22,7 @@ To Arch rolling release korzystający z repozytoriów **core/extra** i dodatkowe
 
 Otwórz **Actions → Build RAVNUX ISO → Run workflow** i zaznacz `build_iso`. Push i pull request uruchamiają walidację źródeł oraz przygotowanie profilu; pełna budowa ISO wymaga ręcznego uruchomienia. Opcja `publish_release` steruje publikacją wydania (wyłącz ją do testowej budowy). Opcja `vm_tests` dodatkowo uruchamia testy rozruchu BIOS i UEFI, a opcja `install_test` — interaktywną instalację na pustym dysku oraz start z dysku w BIOS i UEFI; wydanie oznaczone jako wstępne (prerelease) oznacza, że któryś z tych testów nie przeszedł lub nie został uruchomiony.
 
-Po udanej budowie ISO wraz z sumą `SHA256SUMS`, listami pakietów i logami budowy/VM jest publikowane jako wydanie w publicznym repozytorium wydań: **https://github.com/stainleSSStar/RAVNUX-releases/releases**. Publikacja używa sekretu `RELEASE_TOKEN` i działa również wtedy, gdy testy VM nie przeszły — wtedy dołączone logi wskazują przyczynę. Artefakty Actions zawierają tylko niewielkie logi, manifesty i podgląd pulpitu. ISO jest dostarczane wyłącznie przez repozytorium wydań; nie jest wysyłane do limitowanego magazynu artefaktów Actions.
+Po udanej budowie ISO wraz z sumą `SHA256SUMS`, listami pakietów i logami budowy/VM jest publikowane jako wydanie w publicznym repozytorium wydań: **https://github.com/stainleSSStar/RAVNUX-releases/releases**. Publikacja używa sekretu `RELEASE_TOKEN` i następuje dopiero po sukcesie wszystkich wybranych testów. Nieudana walidacja, budowa lub wybrany test VM blokuje publikację. Artefakty Actions zawierają tylko niewielkie logi, manifesty i podgląd pulpitu. ISO jest dostarczane wyłącznie przez repozytorium wydań; nie jest wysyłane do limitowanego magazynu artefaktów Actions.
 
 ISO obsługuje UEFI x86_64 oraz BIOS. Secure Boot nie jest skonfigurowany. Obraz jest dla zwykłych komputerów x86_64, nie dla Apple Silicon.
 
@@ -90,7 +90,7 @@ sudo python3 -m unittest discover -s tests -v
 
 Serwer `xorg-server` i sterownik `xf86-input-libinput` zostały zastąpione przez `xlibre-xserver` i `xlibre-input-libinput`. Klucz podpisujący XLibre jest dołączony i sprawdzany według pełnego fingerprintu `0C92313001CFCA27627B9098B97F7C613F359424`. Podpisy pakietów pozostają wymagane. Klienci i biblioteki X11 mogą zachować nazwy `xorg-*`/`libX*`; nie są serwerem Xorg.
 
-CI dodatkowo renderuje rzeczywisty panel XFCE, Thunar, terminal i kontrolki GTK3 pod Xvfb; PNG jest dostępny jako artefakt `RAVNUX-desktop-preview`. Narzędzia podglądu są instalowane tylko na runnerze, bez dodawania pakietów do dystrybucji. Testy VM sprawdzają również motyw, zielony tekst i tryb przezroczystości terminala.
+CI dodatkowo renderuje rzeczywisty panel XFCE, Thunar, terminal i kontrolki GTK3 pod Xvfb; PNG jest dostępny jako artefakt `RAVNUX-desktop-preview`; przy przekroczonym limicie magazynu jego kopia Base64 i log renderowania trafiają do logu zadania. Narzędzia podglądu są instalowane tylko na runnerze, bez dodawania pakietów do dystrybucji. Testy VM sprawdzają również motyw, zielony tekst i tryb przezroczystości terminala.
 
 Kontrole źródeł weryfikują składnię Bash, XML, format konfiguracji, zestaw pakietów i oddzielenie sesji live od systemu docelowego. Proces budowania dodatkowo sprawdza dostępność wszystkich żądanych pakietów w bazie pacmana i buduje ISO. Nie zastępuje to testu bootowania ani instalacji.
 

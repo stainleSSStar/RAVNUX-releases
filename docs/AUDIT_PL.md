@@ -19,12 +19,16 @@ Testy nie stanowią gwarancji braku wszystkich błędów ani zgodności z każdy
 - **Nowy format ustawień terminala:** dostarczono natywny kanał Xfconf dla
   Terminala 1.2 oraz zgodny `terminalrc` dla starszych wersji. Kolory motywu
   GTK nie zastępują kolorów tekstu terminala; kursor ma jawny różowy kolor.
+- **Kolor panelu:** `background-rgba` miał błędny typ string, co powodowało
+  ostrzeżenie GLib i pomijanie ustawienia. Ustawiono cztery składowe double,
+  zgodnie z formatem Xfconf dla koloru RGBA.
 - **Niespójne kontrolki:** rozszerzono motyw o listy, pola, menu, przyciski,
   przełączniki, suwaki, stany nieaktywne, GTK4 i własne powiadomienia XFCE.
 - **Magazyn Actions:** workflow próbował wysyłać całe ISO do artefaktów mimo
   opisanej dystrybucji przez Releases. Artefakty obejmują teraz tylko małe
   pliki diagnostyczne i podgląd pulpitu. Osobna opcja pozwala budować/testować
-  ISO bez publikacji wydania.
+  ISO bez publikacji wydania. Publikacja jest blokowana, gdy którykolwiek
+  wybrany test zakończy się błędem.
 
 ## Minimalizm bez utraty funkcji
 

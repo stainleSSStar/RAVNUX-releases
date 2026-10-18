@@ -51,7 +51,7 @@ jobs:
             -v "$PWD:/build" -w /build archlinux:base-devel \
             bash -euc 'pacman -Syu --noconfirm archiso python; bash scripts/build.sh --prepare-only'
   iso:
-    needs: validate
+    needs: [validate, desktop-preview]
     if: github.event_name == 'workflow_dispatch' && inputs.build_iso
     runs-on: ubuntu-24.04
     timeout-minutes: 90
@@ -101,7 +101,7 @@ jobs:
           compression-level: 0
           retention-days: 14
       - name: Publish ISO to the public releases repository
-        if: always() && inputs.publish_release && steps.build.outcome == 'success'
+        if: success() && inputs.publish_release && steps.build.outcome == 'success'
         env:
           GH_TOKEN: ${{ secrets.RELEASE_TOKEN }}
           RELEASE_REPO: stainleSSStar/RAVNUX-releases
@@ -111,6 +111,8 @@ jobs:
           iso_version="$(date -u --date="@$(sed -n 's/^SOURCE_DATE_EPOCH=//p' out/build-info.txt)" +%Y.%m.%d)"
           tag="v${iso_version}-r${GITHUB_RUN_NUMBER}"
           notes="RAVNUX live/installer ISO built from commit ${GITHUB_SHA} (workflow run ${GITHUB_RUN_NUMBER}).
+          Purple/pink XFCE with green terminal text and 88% opaque purple background; GTK2/3/4 and notifications share the palette.
+          Fixed duplicate PolicyKit autostart, installer account collisions, wallpaper preservation and panel RGBA configuration. Removed unused efibootmgr from the no-NVRAM installation path.
           Release assets: ISO image, SHA256SUMS, user guide, package manifests, build/VM logs.
           VM boot tests: ${{ steps.vm.outcome == 'success' && 'passed (BIOS and UEFI)' || 'not passed or not run; see logs' }}.
           CLI install tests (BIOS and UEFI to blank disks): ${{ steps.install.outcome == 'success' && 'passed' || 'not passed or not run; see logs' }}."
@@ -146,7 +148,7 @@ jobs:
       - name: Install preview tools (runner only)
         run: |
           sudo apt-get update
-          sudo apt-get install -y --no-install-recommends xvfb xauth dbus-x11 python3-gi gir1.2-gtk-3.0 gir1.2-gtk-4.0 xfwm4 xfce4-panel xfce4-settings xfdesktop4 xfce4-terminal thunar xfce4-notifyd libnotify-bin wmctrl fish fonts-dejavu adwaita-icon-theme
+          sudo apt-get install -y --no-install-recommends xvfb xauth dbus-x11 python3-gi gir1.2-gtk-3.0 gir1.2-gtk-4.0 xfwm4 xfce4-panel xfce4-settings xfdesktop4 xfce4-terminal xfce4-pulseaudio-plugin thunar xfce4-notifyd libnotify-bin wmctrl fish fonts-dejavu adwaita-icon-theme
       - name: Validate GTK4 theme syntax
         run: |
           xvfb-run python3 - <<'PY'

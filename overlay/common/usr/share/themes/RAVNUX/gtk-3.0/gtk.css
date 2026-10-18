@@ -80,3 +80,22 @@ tooltip, tooltip.background { background-color: #301b3e; color: #fff3fc; border:
 .xfce4-panel button:hover { background-color: #452854; }
 .xfce4-panel button:checked { background-color: #633274; border-bottom: 2px solid #f472b6; }
 #desktop-view { color: #fff3fc; }
+
+/* Adwaita has more specific backdrop rules. Keep unfocused application
+ * content purple too, including Thunar and text selections in entries. */
+.view:backdrop, treeview.view:backdrop, textview text:backdrop, iconview:backdrop,
+list:backdrop, entry:backdrop, spinbutton:not(.vertical):backdrop {
+ background-color: @theme_base_color; color: @theme_unfocused_fg_color;
+}
+menubar:backdrop, toolbar:backdrop, .primary-toolbar:backdrop, headerbar:backdrop {
+ background-image: none; background-color: #301b3e; color: @theme_unfocused_fg_color;
+}
+.sidebar:backdrop, .sidebar .view:backdrop, .sidebar list:backdrop {
+ background-color: #201229; color: @theme_unfocused_fg_color;
+}
+entry selection, entry selection:focus, textview text selection, textview text selection:focus {
+ background-color: @theme_selected_bg_color; color: @theme_selected_fg_color;
+}
+entry selection:backdrop, textview text selection:backdrop {
+ background-color: #633274; color: #fff3fc;
+}
