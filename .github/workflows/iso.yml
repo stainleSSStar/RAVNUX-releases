@@ -148,7 +148,7 @@ jobs:
       - name: Install preview tools (runner only)
         run: |
           sudo apt-get update
-          sudo apt-get install -y --no-install-recommends xvfb xauth dbus-x11 python3-gi gir1.2-gtk-3.0 gir1.2-gtk-4.0 xfwm4 xfce4-panel xfce4-settings xfdesktop4 xfce4-terminal xfce4-pulseaudio-plugin thunar xfce4-notifyd libnotify-bin wmctrl fish fonts-dejavu adwaita-icon-theme
+          sudo apt-get install -y --no-install-recommends xvfb xauth dbus-x11 python3-gi gir1.2-gtk-3.0 gir1.2-gtk-4.0 librsvg2-common xfwm4 xfce4-panel xfce4-settings xfdesktop4 xfce4-terminal xfce4-pulseaudio-plugin thunar xfce4-notifyd libnotify-bin wmctrl fish fonts-dejavu adwaita-icon-theme
       - name: Validate GTK4 theme syntax
         run: |
           xvfb-run python3 - <<'PY'

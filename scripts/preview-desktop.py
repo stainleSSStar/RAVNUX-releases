@@ -43,6 +43,14 @@ with tempfile.TemporaryDirectory(prefix='ravnux-preview-') as directory:
     gi.require_version('Gdk', '3.0')
     from gi.repository import Gdk, GLib, Gtk
 
+    icon_theme = Gtk.IconTheme.get_default()
+    folder = icon_theme.lookup_icon('folder', 64, 0)
+    if folder is None or '/RAVNUX/' not in folder.get_filename():
+        raise RuntimeError('RAVNUX folder icons were not selected')
+    # A minimal Ubuntu runner needs librsvg2-common explicitly; Arch's GTK3
+    # already requires librsvg. Catch silent fallback to blue PNG icons.
+    icon_theme.load_icon('folder', 64, 0)
+
     errors = []
     for path in (common / 'usr/share/themes/RAVNUX').glob('*/gtk.css'):
         if path.parent.name == 'gtk-4.0':
