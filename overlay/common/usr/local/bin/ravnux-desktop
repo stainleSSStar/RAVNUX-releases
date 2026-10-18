@@ -18,12 +18,14 @@ for _ in {1..40}; do
   if [[ -n $monitors ]]; then
    # A fresh profile uses one background for every workspace. Do not change
    # workspace preferences if the user has already configured a background.
-   if ! printf '%s\n' "$properties" | grep -q '/last-image$'; then
+   # Read the full list: grep -q can close a large pipe early, and pipefail
+   # would then mistake printf's SIGPIPE for a missing property.
+   if ! printf '%s\n' "$properties" | grep '/last-image$' >/dev/null; then
     xfconf-query -c xfce4-desktop -p /backdrop/single-workspace-number -n -t int -s 0
     xfconf-query -c xfce4-desktop -p /backdrop/single-workspace-mode -n -t bool -s true
    fi
    while IFS= read -r property; do
-    if ! printf '%s\n' "$properties" | grep -Fxq "$property/last-image"; then
+    if ! printf '%s\n' "$properties" | grep -Fx "$property/last-image" >/dev/null; then
      xfconf-query -c xfce4-desktop -p "$property/image-style" -n -t int -s 5
      xfconf-query -c xfce4-desktop -p "$property/last-image" -n -t string -s "$wallpaper"
     fi

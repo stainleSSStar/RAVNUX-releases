@@ -40,7 +40,7 @@ test -s /usr/share/ravnux/guide-pl.md
 # sudo flushes pending tty input when it sets up the target session, so nothing
 # may follow this line; keep the completion marker in the same line and fail via
 # the ERR trap if the display check fails.
-if sudo -u ravnux env DISPLAY=:0 XAUTHORITY=/home/ravnux/.Xauthority DBUS_SESSION_BUS_ADDRESS=unix:path=/run/user/1000/bus bash -c 'set -e; xdpyinfo >/dev/null; test "$(xfconf-query -c xfwm4 -p /general/use_compositing)" = true; for attempt in {1..40}; do if xfconf-query -c xfce4-desktop -lv | grep -F /usr/share/backgrounds/ravnux/cyberpunk-city.jpg >/dev/null; then exit 0; fi; sleep 1; done; exit 1'; then printf '\\nRAVNUX_VM_OK\\n'; else false; fi
+if sudo -u ravnux env DISPLAY=:0 XAUTHORITY=/home/ravnux/.Xauthority DBUS_SESSION_BUS_ADDRESS=unix:path=/run/user/1000/bus bash -c 'set -e; xdpyinfo >/dev/null; test "$(xfconf-query -c xsettings -p /Net/ThemeName)" = RAVNUX; test "$(xfconf-query -c xfce4-terminal -p /color-foreground)" = "#a6f28a"; test "$(xfconf-query -c xfce4-terminal -p /background-mode)" = TERMINAL_BACKGROUND_TRANSPARENT; test "$(xfconf-query -c xfwm4 -p /general/use_compositing)" = true; for attempt in {1..40}; do if xfconf-query -c xfce4-desktop -lv | grep -F /usr/share/backgrounds/ravnux/cyberpunk-city.jpg >/dev/null; then exit 0; fi; sleep 1; done; exit 1'; then printf '\\nRAVNUX_VM_OK\\n'; else false; fi
 '''
 
 

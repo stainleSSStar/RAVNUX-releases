@@ -3,6 +3,11 @@
 set -Eeuo pipefail
 
 fail() { echo "Error: $*" >&2; exit 1; }
+validate_username() {
+ local username=$1
+ [[ $username =~ ^[a-z_][a-z0-9_-]{0,31}$ && $username != root && $username != ravnux ]] || fail 'Invalid username (root and ravnux are reserved).'
+ if getent passwd "$username" >/dev/null; then fail 'Username already exists; choose a new account name.'; fi
+}
 disk_is_block() { [[ -b $1 ]]; }
 partition_path() {
  if [[ $1 == *[0-9] ]]; then printf '%sp%s\n' "$1" "$2"; else printf '%s%s\n' "$1" "$2"; fi
@@ -128,7 +133,7 @@ main() {
  hostname=${hostname:-ravpc}
  [[ $hostname =~ ^[a-zA-Z0-9]([a-zA-Z0-9-]{0,61}[a-zA-Z0-9])?$ ]] || fail 'Invalid hostname.'
  read -r -p 'Username (root and ravnux are reserved): ' username
- [[ $username =~ ^[a-z_][a-z0-9_-]{0,31}$ && $username != root && $username != ravnux ]] || fail 'Invalid username.'
+ validate_username "$username"
  read -r -p 'Timezone [Europe/Warsaw]: ' timezone
  timezone=${timezone:-Europe/Warsaw}
  [[ $timezone != /* && $timezone != *..* && -f /usr/share/zoneinfo/$timezone ]] || fail 'Invalid timezone.'

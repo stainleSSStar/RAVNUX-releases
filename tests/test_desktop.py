@@ -78,6 +78,16 @@ printf '%s\\n' 'Screen 0: minimum 8 x 8, current 3840 x 1080, maximum 32767 x 32
         self.assertFalse(marked)
         self.assertIn('initialization failed', result.stderr)
 
+    def test_large_property_list_preserves_user_wallpaper_and_workspace_mode(self):
+        key = '/backdrop/screen0/monitoreDP-1/workspace0/last-image'
+        existing = {key: '/my/photo.jpg', '/backdrop/single-workspace-mode': 'false'}
+        existing.update({f'/other/settings/property-{i}': 'value' for i in range(10000)})
+        result, state, marked, _ = self.run_desktop(existing)
+        self.assertEqual(result.returncode, 0, result.stderr)
+        self.assertEqual(state[key], '/my/photo.jpg')
+        self.assertEqual(state['/backdrop/single-workspace-mode'], 'false')
+        self.assertTrue(marked)
+
     def test_later_login_keeps_user_settings(self):
         existing = {'/backdrop/custom': 'unchanged'}
         result, state, _, _ = self.run_desktop(existing, initialized=True)

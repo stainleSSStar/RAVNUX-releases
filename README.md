@@ -12,17 +12,17 @@ Minimalistyczny system **x86_64 oparty na Arch Linux**, z XFCE na XLibre, Fish i
 - PipeWire + WirePlumber, obsługa ALSA i aplikacji PulseAudio, kontrola głośności i mikrofonu.
 - NetworkManager, Wi-Fi, Bluetooth, montowanie nośników USB oraz uwierzytelnianie administracyjne.
 - Mesa/OpenGL: otwarte sterowniki grafiki Intel/AMD oraz Nouveau dla obsługiwanych kart NVIDIA. Bez własnościowego sterownika NVIDIA, dodatkowych sterowników Vulkan i pakietów AUR.
-- LightDM, własny motyw GTK/Xfwm, ciemne purpurowe tło i różowo-purpurowy terminal/Fish. Domyślna tapeta to cyberpunkowe miasto z purpurowymi neonami; logo to różowa litera R na purpurowym tle. Oba pliki są dostarczane na ISO oraz w systemie docelowym, bez pobierania przy logowaniu.
+- LightDM, własny motyw GTK/Xfwm, spójne purpurowo-różowe GTK2/GTK3/GTK4 i powiadomienia; terminal/Fish z zielonym tekstem na purpurowym tle o kryciu 88%. Domyślna tapeta to cyberpunkowe miasto z purpurowymi neonami; logo to różowa litera R na purpurowym tle. Oba pliki są dostarczane na ISO oraz w systemie docelowym, bez pobierania przy logowaniu.
 
-Bez preinstalowanej przeglądarki, pakietu biurowego, gier, sklepu z aplikacjami, helpera AUR, serwera SSH i środowiska programistycznego. Pakiety `packages/system.txt` stanowią zestaw docelowy; pacman instaluje także ich wymagane zależności. GRUB, przy UEFI efibootmgr, oraz ewentualnie btrfs-progs są dodawane przez instalator jako narzędzia rozruchu/filesystemu.
+Bez preinstalowanej przeglądarki, pakietu biurowego, gier, sklepu z aplikacjami, helpera AUR, serwera SSH i środowiska programistycznego. Pakiety `packages/system.txt` stanowią zestaw docelowy; pacman instaluje także ich wymagane zależności. GRUB oraz ewentualnie btrfs-progs są dodawane przez instalator jako narzędzia rozruchu/filesystemu.
 
 To Arch rolling release korzystający z repozytoriów **core/extra** i dodatkowego **xlibre-stable**, bez testing i beta. Brak mechanizmu automatycznego aktualizowania systemu. Budowanie w różnych dniach może pobrać różne wersje pakietów; nie jest to zamrożony ani bitowo powtarzalny obraz.
 
 ## Pobranie ISO z GitHub
 
-Otwórz **Actions → Build RAVNUX ISO → Run workflow** i zaznacz `build_iso`. Push i pull request uruchamiają walidację źródeł oraz przygotowanie profilu; pełna budowa ISO wymaga ręcznego uruchomienia. Opcja `vm_tests` dodatkowo uruchamia testy rozruchu BIOS i UEFI, a opcja `install_test` — interaktywną instalację na pustym dysku oraz start z dysku w BIOS i UEFI; wydanie oznaczone jako wstępne (prerelease) oznacza, że któryś z tych testów nie przeszedł lub nie został uruchomiony.
+Otwórz **Actions → Build RAVNUX ISO → Run workflow** i zaznacz `build_iso`. Push i pull request uruchamiają walidację źródeł oraz przygotowanie profilu; pełna budowa ISO wymaga ręcznego uruchomienia. Opcja `publish_release` steruje publikacją wydania (wyłącz ją do testowej budowy). Opcja `vm_tests` dodatkowo uruchamia testy rozruchu BIOS i UEFI, a opcja `install_test` — interaktywną instalację na pustym dysku oraz start z dysku w BIOS i UEFI; wydanie oznaczone jako wstępne (prerelease) oznacza, że któryś z tych testów nie przeszedł lub nie został uruchomiony.
 
-Po udanej budowie ISO wraz z sumą `SHA256SUMS`, listami pakietów i logami budowy/VM jest publikowane jako wydanie w publicznym repozytorium wydań: **https://github.com/stainleSSStar/RAVNUX-releases/releases**. Publikacja używa sekretu `RELEASE_TOKEN` i działa również wtedy, gdy testy VM nie przeszły — wtedy dołączone logi wskazują przyczynę. Artefakty Actions w prywatnym repozytorium źródłowym pozostają ograniczone limitem darmowego planu (500 MB), dlatego ISO (ok. 1,6 GB) nie może być artefaktem i jest dostarczane wyłącznie przez repozytorium wydań.
+Po udanej budowie ISO wraz z sumą `SHA256SUMS`, listami pakietów i logami budowy/VM jest publikowane jako wydanie w publicznym repozytorium wydań: **https://github.com/stainleSSStar/RAVNUX-releases/releases**. Publikacja używa sekretu `RELEASE_TOKEN` i następuje dopiero po sukcesie wszystkich wybranych testów. Nieudana walidacja, budowa lub wybrany test VM blokuje publikację. Artefakty Actions zawierają tylko niewielkie logi, manifesty i podgląd pulpitu. ISO jest dostarczane wyłącznie przez repozytorium wydań; nie jest wysyłane do limitowanego magazynu artefaktów Actions.
 
 ISO obsługuje UEFI x86_64 oraz BIOS. Secure Boot nie jest skonfigurowany. Obraz jest dla zwykłych komputerów x86_64, nie dla Apple Silicon.
 
@@ -90,6 +90,8 @@ sudo python3 -m unittest discover -s tests -v
 
 Serwer `xorg-server` i sterownik `xf86-input-libinput` zostały zastąpione przez `xlibre-xserver` i `xlibre-input-libinput`. Klucz podpisujący XLibre jest dołączony i sprawdzany według pełnego fingerprintu `0C92313001CFCA27627B9098B97F7C613F359424`. Podpisy pakietów pozostają wymagane. Klienci i biblioteki X11 mogą zachować nazwy `xorg-*`/`libX*`; nie są serwerem Xorg.
 
+CI dodatkowo renderuje rzeczywisty panel XFCE, Thunar, terminal i kontrolki GTK3 pod Xvfb; PNG jest dostępny jako artefakt `RAVNUX-desktop-preview`; przy przekroczonym limicie magazynu jego kopia Base64 i log renderowania trafiają do logu zadania. Narzędzia podglądu są instalowane tylko na runnerze, bez dodawania pakietów do dystrybucji. Testy VM sprawdzają również motyw, zielony tekst i tryb przezroczystości terminala.
+
 Kontrole źródeł weryfikują składnię Bash, XML, format konfiguracji, zestaw pakietów i oddzielenie sesji live od systemu docelowego. Proces budowania dodatkowo sprawdza dostępność wszystkich żądanych pakietów w bazie pacmana i buduje ISO. Nie zastępuje to testu bootowania ani instalacji.
 
 Po zbudowaniu ISO można sprawdzić sesję live w QEMU na Linuxie z pakietami `qemu-system-x86` i `ovmf`:
@@ -142,3 +144,5 @@ Kod i oryginalne grafiki motywu: MIT. Pakiety Arch i szablony Archiso zachowują
 - `overlay/common/usr/share/backgrounds/ravnux/cyberpunk-city.jpg` — domyślna tapeta pulpitu i ekranu logowania, generowana panorama miasta.
 
 Tapeta jest ustawiana przy pierwszym uruchomieniu pulpitu użytkownika. Późniejszy wybór własnej tapety pozostaje zachowany. Grafiki zostały wygenerowane przy użyciu wbudowanego generatora obrazów. Prompty: `docs/artwork-prompts.md`.
+
+Zasady doboru pakietów i zakres bieżącego audytu: [docs/AUDIT_PL.md](docs/AUDIT_PL.md).

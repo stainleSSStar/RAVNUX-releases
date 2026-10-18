@@ -11,8 +11,13 @@ root = Path(__file__).resolve().parents[1]
 for path in list((root / 'scripts').glob('*.sh')) + list((root / 'overlay').rglob('*')):
     if path.is_file() and path.read_bytes().startswith(b'#!/usr/bin/env bash'):
         subprocess.run(['bash', '-n', str(path)], check=True)
-for path in (root / 'overlay').rglob('*.xml'):
+for path in list((root / 'overlay').rglob('*.xml')) + list((root / 'overlay').rglob('*.svg')):
     ET.parse(path)
+panel = ET.parse(root / 'overlay/common/etc/skel/.config/xfce4/xfconf/xfce-perchannel-xml/xfce4-panel.xml')
+rgba = panel.find('.//property[@name="background-rgba"]')
+assert rgba is not None and rgba.get('type') == 'array', 'Panel RGBA must be a boxed array, not a CSS string'
+assert len(rgba) == 4 and all(v.get('type') == 'double' and 0 <= float(v.get('value')) <= 1 for v in rgba), \
+    'Panel RGBA needs four normalized doubles'
 for pattern in ('*.desktop', '*.ini', 'terminalrc', '*.theme'):
     for path in (root / 'overlay').rglob(pattern):
         config = configparser.ConfigParser(interpolation=None, strict=False)

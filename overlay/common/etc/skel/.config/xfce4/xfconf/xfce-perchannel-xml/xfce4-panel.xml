@@ -8,7 +8,12 @@
    <property name="position-locked" type="bool" value="true"/>
    <property name="size" type="uint" value="40"/>
    <property name="background-style" type="uint" value="1"/>
-   <property name="background-rgba" type="string" value="rgba(24,14,36,0.88)"/>
+   <property name="background-rgba" type="array">
+    <value type="double" value="0.0941176470588235"/>
+    <value type="double" value="0.0549019607843137"/>
+    <value type="double" value="0.1411764705882353"/>
+    <value type="double" value="0.88"/>
+   </property>
    <property name="enter-opacity" type="uint" value="100"/>
    <property name="leave-opacity" type="uint" value="100"/>
    <property name="length" type="uint" value="100"/>
