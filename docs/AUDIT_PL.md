@@ -28,7 +28,8 @@ Testy nie stanowią gwarancji braku wszystkich błędów ani zgodności z każdy
   opisanej dystrybucji przez Releases. Artefakty obejmują teraz tylko małe
   pliki diagnostyczne i podgląd pulpitu. Osobna opcja pozwala budować/testować
   ISO bez publikacji wydania. Publikacja jest blokowana, gdy którykolwiek
-  wybrany test zakończy się błędem.
+  wybrany test zakończy się błędem. Anulowanie workflow nie uruchamia już
+  kolejnego długiego testu instalacji; wcześniej pozwalało na to `always()`.
 
 ## Minimalizm bez utraty funkcji
 

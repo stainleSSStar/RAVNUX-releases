@@ -28,7 +28,7 @@ defaults:
   run:
     shell: bash
 concurrency:
-  group: ravnux-${{ github.ref }}
+  group: ravnux-${{ github.ref }}-${{ github.event_name }}
   cancel-in-progress: true
 jobs:
   validate:
@@ -78,7 +78,7 @@ jobs:
           python3 scripts/vm-smoke.py --timeout 1800 out/*.iso 2>&1 | tee ci-logs/vm.log
       - name: Install to a blank disk and boot from it
         id: install
-        if: always() && inputs.install_test && steps.build.outcome == 'success'
+        if: ${{ !cancelled() && inputs.install_test && steps.build.outcome == 'success' }}
         run: |
           sudo apt-get update
           sudo apt-get install -y qemu-system-x86 ovmf
