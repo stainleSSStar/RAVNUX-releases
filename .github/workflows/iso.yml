@@ -163,9 +163,27 @@ jobs:
         run: |
           dbus-run-session -- xvfb-run -s '-screen 0 1440x900x24 +extension COMPOSITE' python3 scripts/preview-desktop.py --output ci-logs/desktop.png
       - name: Upload desktop preview
+        id: preview-upload
         if: always()
+        continue-on-error: true
         uses: actions/upload-artifact@v4
         with:
           name: RAVNUX-desktop-preview
           path: ci-logs/
           retention-days: 7
+      - name: Preserve preview in job log when artifact storage is unavailable
+        if: always() && steps.preview-upload.outcome == 'failure'
+        run: |
+          python3 - <<'PY'
+          import base64
+          from pathlib import Path
+          import textwrap
+          path = Path('ci-logs/desktop.png')
+          if path.is_file():
+              print('RAVNUX_PREVIEW_PNG_BASE64_BEGIN')
+              print('\n'.join(textwrap.wrap(base64.b64encode(path.read_bytes()).decode(), 120)))
+              print('RAVNUX_PREVIEW_PNG_BASE64_END')
+          log = Path('ci-logs/desktop.log')
+          if log.is_file():
+              print(log.read_text())
+          PY

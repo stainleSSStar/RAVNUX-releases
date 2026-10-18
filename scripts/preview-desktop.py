@@ -32,6 +32,10 @@ with tempfile.TemporaryDirectory(prefix='ravnux-preview-') as directory:
     (home / 'Documents/Welcome.txt').write_text('RAVNUX — minimal XFCE desktop\n')
     os.environ.update(HOME=str(home), XDG_CONFIG_HOME=str(home / '.config'),
                       XDG_CACHE_HOME=str(home / '.cache'), GTK_THEME='RAVNUX')
+    # D-Bus started before Xvfb; activated XFCE daemons need this display and
+    # isolated profile too, rather than the runner's original HOME.
+    subprocess.run(['dbus-update-activation-environment', 'DISPLAY', 'XAUTHORITY',
+                    'HOME', 'XDG_CONFIG_HOME', 'XDG_CACHE_HOME', 'GTK_THEME'], check=True)
     import gi
     gi.require_version('Gtk', '3.0')
     gi.require_version('Gdk', '3.0')
