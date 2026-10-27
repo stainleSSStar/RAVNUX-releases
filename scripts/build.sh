@@ -46,9 +46,14 @@ iso_version="$(date -u --date="@$SOURCE_DATE_EPOCH" +%Y.%m.%d)"
 iso_publisher="RAVNUX <https://github.com/stainleSSStar/RAVNUX>"
 iso_application="RAVNUX XFCE Live and Installer"
 airootfs_image_tool_options=('-comp' 'zstd' '-Xcompression-level' '15' '-b' '1M')
-# Append: keep upstream archiso's entries (/etc/shadow 0:0:400, /root 0:0:750);
-# a plain assignment would replace the whole array.
-file_permissions+=(
+# This assignment intentionally REPLACES upstream's array: RAVNUX strips the
+# upstream rescue airootfs, so upstream entries like /root/.automated_script.sh
+# or /usr/local/bin/livecd-sound would make mkarchiso fail on missing paths.
+# Entries whose targets do exist here are kept from upstream (/etc/shadow,
+# /root) and merged with RAVNUX's own.
+file_permissions=(
+ ["/etc/shadow"]="0:0:400"
+ ["/root"]="0:0:750"
  ["/etc/sudoers.d"]="0:0:750"
  ["/usr/share/ravnux/root-overlay/etc/sudoers.d"]="0:0:750"
  ["/usr/local/bin/ravnux-keyring-init"]="0:0:755"
