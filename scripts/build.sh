@@ -98,18 +98,15 @@ python3 scripts/check.py
 if $prepare_only; then exit 0; fi
 # Fail early on renamed/missing packages instead of silently producing an incomplete image.
 mapfile -t packages < profile/packages.x86_64
-# Build-time signature verification must not permanently extend the pacman
-# trust of a contributor's real host: use a throwaway keyring, referenced
-# from the profile pacman.conf so the repository sync, the package
-# availability check and mkarchiso's pacstrap all verify against it. The
-# live image's own pacman.conf comes from the overlay and stays untouched;
-# the live system initializes its keyring at boot.
-keyring=$(mktemp -d)
-trap 'rm -rf -- "$keyring"' EXIT
-printf 'GPGDir = %s\n' "$keyring" >> profile/pacman.conf
-pacman-key --gpgdir "$keyring" --init
-pacman-key --gpgdir "$keyring" --populate archlinux
-bash overlay/common/usr/local/bin/ravnux-keyring-init "$PWD/overlay/common/usr/share/ravnux/keyring/xlibre-archlinux.asc" "$keyring"
+# mkarchiso's pacstrap verifies package signatures against the HOST keyring
+# at /etc/pacman.d/gnupg (verified: an isolated GPGDir does not flow through to
+# it, and the build fails with "unknown trust" for the XLibre key). The build
+# therefore necessarily initializes the host keyring and locally signs the
+# XLibre key. Run the build in a disposable container (as CI does) if you do
+# not want to extend this machine's pacman trust.
+pacman-key --init
+pacman-key --populate archlinux
+bash overlay/common/usr/local/bin/ravnux-keyring-init "$PWD/overlay/common/usr/share/ravnux/keyring/xlibre-archlinux.asc"
 pacman --config "$PWD/profile/pacman.conf" -Sy --noconfirm
 pacman --config "$PWD/profile/pacman.conf" -Si "${packages[@]}" >/dev/null
 mkdir -p out
