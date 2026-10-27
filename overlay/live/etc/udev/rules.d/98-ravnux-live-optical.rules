@@ -1,0 +1,4 @@
+# Archiso mounts its squashfs explicitly; an ISO9660 boot CD is not a systemd
+# Discoverable Disk Image. Avoid the failing systemd-loop@ attach in systemd 262
+# (upstream systemd/systemd#43605). Keep all non-ISO and installed-system rules.
+SUBSYSTEM=="block", ENV{ID_CDROM}=="1", ENV{ID_FS_TYPE}=="iso9660", ENV{ID_PART_GPT_AUTO_ROOT_DISK_NEEDS_LOOP}="0"

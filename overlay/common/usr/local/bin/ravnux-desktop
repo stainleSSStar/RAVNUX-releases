@@ -1,0 +1,60 @@
+#!/usr/bin/env bash
+set -euo pipefail
+wallpaper=/usr/share/backgrounds/ravnux/cyberpunk-city.jpg
+marker="$HOME/.config/ravnux/wallpaper-initialized"
+[[ ! -f $marker ]] || exit 0
+[[ -r $wallpaper ]] || { echo "RAVNUX: missing wallpaper: $wallpaper" >&2; exit 1; }
+
+# XFCE 4.20 can render its default without creating any last-image properties.
+# Use XRandR connector names, as xfdesktop does, instead of waiting for those
+# properties to appear. Preserve custom choices; on the first login XFCE may
+# already have written its own packaged default before this helper starts.
+for _ in {1..40}; do
+ if properties=$(xfconf-query -c xfce4-desktop -l) && outputs=$(xrandr --query); then
+  monitors=$(printf '%s\n' "$outputs" | awk '
+   /^Screen [0-9]+:/ { screen=$2; sub(/:$/, "", screen) }
+   $2 == "connected" && /[0-9]+x[0-9]+[+-][0-9]+[+-][0-9]+/ {
+    printf "/backdrop/screen%d/monitor%s/workspace0\n", screen, $1
+   }')
+  if [[ -n $monitors ]]; then
+   # A fresh profile uses one background for every workspace. Do not change
+   # workspace preferences if the user has already configured a background.
+   # Read the full list: grep -q can close a large pipe early, and pipefail
+   # would then mistake printf's SIGPIPE for a missing property.
+   custom_background=false
+   while IFS= read -r existing; do
+    [[ -n $existing ]] || continue
+    current=$(xfconf-query -c xfce4-desktop -p "$existing")
+    case "$current" in
+     ''|/usr/share/backgrounds/xfce/*) ;;
+     *) custom_background=true ;;
+    esac
+   done < <(printf '%s\n' "$properties" | grep '/last-image$' || true)
+   if [[ $custom_background == false ]]; then
+    xfconf-query -c xfce4-desktop -p /backdrop/single-workspace-number -n -t int -s 0
+    xfconf-query -c xfce4-desktop -p /backdrop/single-workspace-mode -n -t bool -s true
+   fi
+   while IFS= read -r property; do
+    current=''
+    if printf '%s\n' "$properties" | grep -Fx "$property/last-image" >/dev/null; then
+     current=$(xfconf-query -c xfce4-desktop -p "$property/last-image")
+    fi
+    if [[ -z $current || $current == /usr/share/backgrounds/xfce/* ]]; then
+     xfconf-query -c xfce4-desktop -p "$property/image-style" -n -t int -s 5
+     xfconf-query -c xfce4-desktop -p "$property/last-image" -n -t string -s "$wallpaper"
+    fi
+   done <<< "$monitors"
+   # During startup xfdesktop can retain an already rendered default even
+   # though xfconf contains the new image. Reload its backdrop cache before
+   # marking initialization complete; retry if the desktop is not ready yet.
+   if xfdesktop --reload; then
+    mkdir -p "$(dirname "$marker")"
+    printf '%s\n' "$wallpaper" > "$marker"
+    exit 0
+   fi
+  fi
+ fi
+ sleep 0.5
+done
+echo 'RAVNUX: wallpaper initialization failed; check the XFCE session bus and XRandR outputs.' >&2
+exit 1

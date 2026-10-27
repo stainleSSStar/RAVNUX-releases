@@ -1,0 +1,266 @@
+name: Build RAVNUX ISO
+on:
+  push:
+    branches: [main]
+    paths-ignore: ['README.md', 'docs/PROGRESS.md', 'docs/artwork-prompts.md', 'LICENSE']
+  pull_request:
+  workflow_dispatch:
+    inputs:
+      build_iso:
+        description: Build the ISO (stage 5)
+        type: boolean
+        default: true
+      vm_tests:
+        description: Also boot BIOS and UEFI VMs (stages 6a/6b)
+        type: boolean
+        default: false
+      install_test:
+        description: Test CLI installation and disk boot in BIOS and UEFI
+        type: boolean
+        default: false
+      publish_release:
+        description: Publish the ISO to the releases repository
+        type: boolean
+        default: true
+      existing_iso_tag:
+        description: Audit this existing release instead of building an ISO (publication must be off)
+        type: string
+        default: ''
+      production_audit:
+        description: Also check service health, installed graphical login, privileges and package reinstallation
+        type: boolean
+        default: true
+permissions:
+  contents: read
+defaults:
+  run:
+    shell: bash
+concurrency:
+  group: ravnux-${{ github.ref }}-${{ github.event_name }}-${{ inputs.existing_iso_tag || 'build' }}
+  cancel-in-progress: true
+jobs:
+  validate:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 20
+    steps:
+      - uses: actions/checkout@v4
+      - name: Install disk test tools
+        run: |
+          # azure.archive.ubuntu.com repeatedly hangs from GH runners; pin the
+          # primary mirror and retry transient connection failures.
+          sudo sed -i 's|azure.archive.ubuntu.com|archive.ubuntu.com|g' \
+            /etc/apt/sources.list /etc/apt/sources.list.d/*.sources 2>/dev/null || true
+          APT_OPTS="-o Acquire::Retries=5 -o Acquire::http::Timeout=30 -o Acquire::https::Timeout=30"
+          sudo apt-get update $APT_OPTS
+          sudo apt-get install -y $APT_OPTS parted dosfstools python3-pil
+      - name: Validate source
+        run: |
+          python3 scripts/check.py
+          sudo python3 -m unittest discover -s tests -v
+      - name: Prepare profile using packaged Archiso templates
+        run: |
+          docker run --rm \
+            -e SOURCE_DATE_EPOCH="$(git log -1 --format=%ct)" \
+            -v "$PWD:/build" -w /build archlinux:base-devel \
+            bash -euc 'pacman -Syu --noconfirm archiso python; bash scripts/build.sh --prepare-only'
+      - name: Verify existing branding survives package updates and validate live udev rule
+        run: |
+          docker run --rm -v "$PWD:/build:ro" -w /build archlinux:base-devel bash -euc '
+            pacman -Syu --noconfirm
+            cp --remove-destination overlay/common/etc/os-release /etc/os-release
+            pacman -S --noconfirm filesystem
+            . /etc/os-release
+            [[ $ID == ravnux && ! -L /etc/os-release ]]
+            udevadm verify overlay/live/etc/udev/rules.d/98-ravnux-live-optical.rules
+          '
+  iso:
+    needs: [validate, desktop-preview]
+    if: github.event_name == 'workflow_dispatch' && inputs.build_iso
+    runs-on: ubuntu-24.04
+    timeout-minutes: 90
+    permissions:
+      contents: write
+    steps:
+      - uses: actions/checkout@v4
+      - name: Build in official Arch Linux container
+        id: build
+        env:
+          EXISTING_ISO_TAG: ${{ inputs.existing_iso_tag }}
+          PUBLISH_RELEASE: ${{ inputs.publish_release }}
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          mkdir -p ci-logs
+          if [[ -n $EXISTING_ISO_TAG ]]; then
+            [[ $EXISTING_ISO_TAG =~ ^v[0-9]{4}\.[0-9]{2}\.[0-9]{2}-r[0-9]+$ && $PUBLISH_RELEASE == false ]]
+            mkdir out
+            gh release download "$EXISTING_ISO_TAG" --repo stainleSSStar/RAVNUX-releases \
+              --pattern '*.iso' --pattern SHA256SUMS --pattern build-info.txt --dir out
+            (cd out && sha256sum -c SHA256SUMS)
+          else
+            docker run --rm --privileged \
+              -e SOURCE_DATE_EPOCH="$(git log -1 --format=%ct)" \
+              -v "$PWD:/build" -w /build archlinux:base-devel \
+              bash -euc 'pacman -Syu --noconfirm archiso python; bash scripts/build.sh' 2>&1 | tee ci-logs/build.log
+          fi
+      - name: Make output writable for VM logs
+        if: always() && steps.build.outcome != 'skipped'
+        run: |
+          if [ -d out ]; then sudo chown -R "$(id -u):$(id -g)" out; fi
+      - name: Boot ISO in BIOS and UEFI virtual machines
+        id: vm
+        if: inputs.vm_tests && steps.build.outcome == 'success'
+        env:
+          PRODUCTION_AUDIT: ${{ inputs.production_audit }}
+        run: |
+          # azure.archive.ubuntu.com repeatedly hangs from GH runners; pin the
+          # primary mirror and retry transient connection failures.
+          sudo sed -i 's|azure.archive.ubuntu.com|archive.ubuntu.com|g' \
+            /etc/apt/sources.list /etc/apt/sources.list.d/*.sources 2>/dev/null || true
+          APT_OPTS="-o Acquire::Retries=5 -o Acquire::http::Timeout=30 -o Acquire::https::Timeout=30"
+          sudo apt-get update $APT_OPTS
+          sudo apt-get install -y $APT_OPTS qemu-system-x86 ovmf python3-pil
+          args=()
+          [[ $PRODUCTION_AUDIT != true ]] || args+=(--production-checks)
+          python3 scripts/vm-smoke.py --timeout 1800 "${args[@]}" out/*.iso 2>&1 | tee ci-logs/vm.log
+      - name: Install to a blank disk and boot from it
+        id: install
+        if: ${{ !cancelled() && inputs.install_test && steps.build.outcome == 'success' }}
+        env:
+          PRODUCTION_AUDIT: ${{ inputs.production_audit }}
+        run: |
+          # azure.archive.ubuntu.com repeatedly hangs from GH runners; pin the
+          # primary mirror and retry transient connection failures.
+          sudo sed -i 's|azure.archive.ubuntu.com|archive.ubuntu.com|g' \
+            /etc/apt/sources.list /etc/apt/sources.list.d/*.sources 2>/dev/null || true
+          APT_OPTS="-o Acquire::Retries=5 -o Acquire::http::Timeout=30 -o Acquire::https::Timeout=30"
+          sudo apt-get update $APT_OPTS
+          sudo apt-get install -y $APT_OPTS qemu-system-x86 ovmf python3-pil
+          # Free the space the airootfs work tree occupies; the disk image needs it.
+          sudo rm -rf work
+          args=()
+          [[ $PRODUCTION_AUDIT != true ]] || args+=(--production-checks)
+          python3 scripts/vm-install.py --timeout 3600 "${args[@]}" out/*.iso 2>&1 | tee ci-logs/vm-install.log
+      - name: Upload small diagnostic artifacts
+        if: always() && steps.build.outcome == 'success'
+        continue-on-error: true
+        uses: actions/upload-artifact@v4
+        with:
+          name: RAVNUX-x86_64-${{ github.run_number }}
+          path: |
+            out/*.txt
+            out/*.md
+            out/*.log
+            out/*.png
+            out/SHA256SUMS
+            ci-logs/
+          if-no-files-found: warn
+          compression-level: 0
+          retention-days: 14
+      - name: Publish ISO to the public releases repository
+        if: success() && inputs.publish_release && steps.build.outcome == 'success'
+        env:
+          # RELEASE_TOKEN (a PAT with contents:write on the releases repo) is
+          # required when publishing from another repository; when the workflow
+          # runs inside the releases repository itself, the built-in token works.
+          GH_TOKEN: ${{ secrets.RELEASE_TOKEN || secrets.GITHUB_TOKEN }}
+          RELEASE_REPO: stainleSSStar/RAVNUX-releases
+        run: |
+          set -euo pipefail
+          shopt -s nullglob
+          iso_version="$(date -u --date="@$(sed -n 's/^SOURCE_DATE_EPOCH=//p' out/build-info.txt)" +%Y.%m.%d)"
+          tag="v${iso_version}-r${GITHUB_RUN_NUMBER}"
+          notes="RAVNUX live/installer ISO built from commit ${GITHUB_SHA} (workflow run ${GITHUB_RUN_NUMBER}).
+          Purple/pink XFCE with green terminal text and 88% opaque purple background; GTK2/3/4 and notifications share the palette.
+          Production audit: OS identity verified across filesystem updates, clean optical UEFI boot, real graphical authentication and lock/unlock, upgrade/reboot coverage, restored UEFI firmware menu utilities, and atomic release publication.
+          Release assets: ISO image, SHA256SUMS, user guide, production audit report, package manifests, actual installed-desktop screenshots and build/VM logs.
+          VM boot tests: ${{ steps.vm.outcome == 'success' && 'passed (BIOS and UEFI)' || 'not passed or not run; see logs' }}.
+          CLI install tests (BIOS and UEFI to blank disks): ${{ steps.install.outcome == 'success' && 'passed' || 'not passed or not run; see logs' }}."
+          publish=(--prerelease)
+          latest=true
+          [[ '${{ inputs.vm_tests }}' == true && '${{ steps.vm.outcome }}' == success ]] || latest=false
+          [[ '${{ inputs.install_test }}' == true && '${{ steps.install.outcome }}' == success ]] || latest=false
+          [[ '${{ inputs.production_audit }}' == true ]] || latest=false
+          if [[ $latest == true ]]; then
+            publish=(--prerelease=false --latest=true)
+          else
+            publish=(--prerelease=true --latest=false)
+          fi
+          assets=(out/*.iso out/SHA256SUMS out/*.txt out/*.md out/*.png out/vm-*.log ci-logs/*.log)
+          isos=(out/*.iso)
+          [[ ${#isos[@]} == 1 && -s ${isos[0]} && -s out/SHA256SUMS ]] || { echo 'One nonempty ISO and SHA256SUMS are required.' >&2; exit 1; }
+          (cd out && sha256sum -c SHA256SUMS)
+          # Keep incomplete uploads private; only the final edit publishes.
+          gh release create "$tag" --repo "$RELEASE_REPO" \
+            --title "RAVNUX ${iso_version} (build ${GITHUB_RUN_NUMBER})" \
+            --notes "$notes" \
+            --draft --latest=false
+          failures=0
+          for asset in "${assets[@]}"; do
+            if [[ ! -s "$asset" ]]; then
+              echo "Skipping empty file: $asset"
+              continue
+            fi
+            if ! gh release upload "$tag" "$asset" --repo "$RELEASE_REPO"; then
+              echo "::warning::Failed to upload $asset"
+              failures=1
+            fi
+          done
+          [[ $failures == 0 ]] || exit "$failures"
+          gh release edit "$tag" --repo "$RELEASE_REPO" --draft=false "${publish[@]}"
+  desktop-preview:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 10
+    steps:
+      - uses: actions/checkout@v4
+      - name: Install preview tools (runner only)
+        run: |
+          # azure.archive.ubuntu.com repeatedly hangs from GH runners; pin the
+          # primary mirror and retry transient connection failures.
+          sudo sed -i 's|azure.archive.ubuntu.com|archive.ubuntu.com|g' \
+            /etc/apt/sources.list /etc/apt/sources.list.d/*.sources 2>/dev/null || true
+          APT_OPTS="-o Acquire::Retries=5 -o Acquire::http::Timeout=30 -o Acquire::https::Timeout=30"
+          sudo apt-get update $APT_OPTS
+          sudo apt-get install -y $APT_OPTS --no-install-recommends xvfb xauth dbus-x11 python3-gi gir1.2-gtk-3.0 gir1.2-gtk-4.0 librsvg2-common x11-utils xfce4-appfinder xfwm4 xfce4-panel xfce4-settings xfdesktop4 xfce4-terminal xfce4-pulseaudio-plugin thunar xfce4-notifyd libnotify-bin wmctrl fish fonts-dejavu adwaita-icon-theme
+      - name: Validate GTK4 theme syntax
+        run: |
+          xvfb-run python3 - <<'PY'
+          import gi
+          gi.require_version('Gtk', '4.0')
+          from gi.repository import Gtk
+          errors = []
+          provider = Gtk.CssProvider()
+          provider.connect('parsing-error', lambda provider, section, error: errors.append(str(error)))
+          provider.load_from_path('overlay/common/usr/share/themes/RAVNUX/gtk-4.0/gtk.css')
+          assert not errors, errors
+          PY
+      - name: Exercise focused-window polling with real XFCE and Fish
+        run: |
+          dbus-run-session -- xvfb-run python3 scripts/check-gui-probes.py
+      - name: Render actual XFCE widgets and terminal
+        run: |
+          dbus-run-session -- xvfb-run -s '-screen 0 1440x900x24 +extension COMPOSITE' python3 scripts/preview-desktop.py --output ci-logs/desktop.png
+      - name: Upload desktop preview
+        id: preview-upload
+        if: always()
+        continue-on-error: true
+        uses: actions/upload-artifact@v4
+        with:
+          name: RAVNUX-desktop-preview
+          path: ci-logs/
+          retention-days: 7
+      - name: Preserve preview in job log when artifact storage is unavailable
+        if: always() && steps.preview-upload.outcome == 'failure'
+        run: |
+          python3 - <<'PY'
+          import base64
+          from pathlib import Path
+          import textwrap
+          path = Path('ci-logs/desktop.png')
+          if path.is_file():
+              print('RAVNUX_PREVIEW_PNG_BASE64_BEGIN')
+              print('\n'.join(textwrap.wrap(base64.b64encode(path.read_bytes()).decode(), 120)))
+              print('RAVNUX_PREVIEW_PNG_BASE64_END')
+          log = Path('ci-logs/desktop.log')
+          if log.is_file():
+              print(log.read_text())
+          PY
