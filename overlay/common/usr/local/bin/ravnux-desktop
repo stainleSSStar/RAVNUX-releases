@@ -44,9 +44,26 @@ for _ in {1..40}; do
      xfconf-query -c xfce4-desktop -p "$property/last-image" -n -t string -s "$wallpaper"
     fi
    done <<< "$monitors"
-   # During startup xfdesktop can retain an already rendered default even
-   # though xfconf contains the new image. Reload its backdrop cache before
-   # marking initialization complete; retry if the desktop is not ready yet.
+   if [[ $custom_background == false ]]; then
+    # The first writes can race xfdesktop's first render. That render
+    # starts before the wallpaper properties exist, so it draws the
+    # packaged default; property-changed signals that arrive while it is
+    # still running are dropped (the backdrop cache is only populated
+    # once it finishes), leaving the default image cached indefinitely.
+    # xfconfd signals on every set, including unchanged values, so
+    # rewriting the properties after the first render has completed
+    # makes xfdesktop drop the cached surface and repaint.
+    for attempt in 1 2; do
+     sleep 3
+     while IFS= read -r property; do
+      xfconf-query -c xfce4-desktop -p "$property/image-style" -t int -s 5
+      xfconf-query -c xfce4-desktop -p "$property/last-image" -t string -s "$wallpaper"
+     done <<< "$monitors"
+    done
+   fi
+   # `xfdesktop --reload` re-serves the cached surface, so it cannot fix
+   # a stale render; it is kept only to catch a desktop that is still
+   # starting up. The delayed rewrites above are the actual repair.
    if xfdesktop --reload; then
     mkdir -p "$(dirname "$marker")"
     printf '%s\n' "$wallpaper" > "$marker"
