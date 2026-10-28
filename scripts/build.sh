@@ -49,11 +49,7 @@ airootfs_image_tool_options=('-comp' 'zstd' '-Xcompression-level' '15' '-b' '1M'
 # This assignment intentionally REPLACES upstream's array: RAVNUX strips the
 # upstream rescue airootfs, so upstream entries like /root/.automated_script.sh
 # or /usr/local/bin/livecd-sound would make mkarchiso fail on missing paths.
-# Entries whose targets do exist here are kept from upstream (/etc/shadow,
-# /root) and merged with RAVNUX's own.
 file_permissions=(
- ["/etc/shadow"]="0:0:400"
- ["/root"]="0:0:750"
  ["/etc/sudoers.d"]="0:0:750"
  ["/usr/share/ravnux/root-overlay/etc/sudoers.d"]="0:0:750"
  ["/usr/local/bin/ravnux-keyring-init"]="0:0:755"
