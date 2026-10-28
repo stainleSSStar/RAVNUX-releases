@@ -50,6 +50,7 @@ airootfs_image_tool_options=('-comp' 'zstd' '-Xcompression-level' '15' '-b' '1M'
 # upstream rescue airootfs, so upstream entries like /root/.automated_script.sh
 # or /usr/local/bin/livecd-sound would make mkarchiso fail on missing paths.
 file_permissions=(
+ ["/etc/shadow"]="0:0:400"
  ["/etc/sudoers.d"]="0:0:750"
  ["/usr/share/ravnux/root-overlay/etc/sudoers.d"]="0:0:750"
  ["/usr/local/bin/ravnux-keyring-init"]="0:0:755"
