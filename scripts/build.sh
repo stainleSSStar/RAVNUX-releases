@@ -48,9 +48,12 @@ iso_application="RAVNUX XFCE Live and Installer"
 airootfs_image_tool_options=('-comp' 'zstd' '-Xcompression-level' '15' '-b' '1M')
 # This assignment intentionally REPLACES upstream's array: RAVNUX strips the
 # upstream rescue airootfs, so upstream entries like /root/.automated_script.sh
-# or /usr/local/bin/livecd-sound would make mkarchiso fail on missing paths.
+# or /usr/local/bin/livecd-sound would make mkarchiso fail on missing paths, and
+# the rest duplicate package defaults (/etc/shadow ships 0600 root-only and
+# /root 0700 in the `filesystem` package — stricter than upstream's entries).
+# Carrying the upstream entries over anyway correlated in CI with a broken
+# installed-desktop wallpaper render; the Arch defaults are sufficient.
 file_permissions=(
- ["/etc/shadow"]="0:0:400"
  ["/etc/sudoers.d"]="0:0:750"
  ["/usr/share/ravnux/root-overlay/etc/sudoers.d"]="0:0:750"
  ["/usr/local/bin/ravnux-keyring-init"]="0:0:755"
