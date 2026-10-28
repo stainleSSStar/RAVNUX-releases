@@ -257,6 +257,17 @@ def graphical_login(console, connection, monitor, out, prefix):
             print('RAVNUX_FAILURE_PNG_BASE64_END', flush=True)
         except Exception as error:
             print(f'Could not capture failure screenshot: {error}', flush=True)
+        # The guest journal and process state are the only way to tell a
+        # missed-notification race in xfdesktop from a missing helper or
+        # file; capture them whenever a graphical check fails.
+        try:
+            connection.sendall(user_probe(
+                'pgrep -a xfdesktop || echo no-xfdesktop; '
+                'journalctl --user -b --no-pager | tail -40 || true',
+                'RAVNUX_FAILURE_DIAG').encode())
+            console.expect(b'\r\nRAVNUX_FAILURE_DIAG\r\n', timeout=60)
+        except Exception as error:
+            print(f'Could not capture guest diagnostics: {error}', flush=True)
         raise
     finally:
         qmp.close()
